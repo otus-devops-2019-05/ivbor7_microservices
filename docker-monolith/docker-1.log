@@ -1,0 +1,35 @@
+# the output of "docker images" before executing "docker commit":
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+ubuntu              16.04               5e13f8dd4c1a        3 weeks ago         120MB
+hello-world         latest              fce289e99eb9        7 months ago        1.84kB
+
+# the output of "docker images" after executing "docker commit":
+REPOSITORY              TAG                 IMAGE ID            CREATED             SIZE
+ivbor/ubuntu-tmp-file   latest              49420032b1e6        25 seconds ago      120MB
+ubuntu                  16.04               5e13f8dd4c1a        3 weeks ago         120MB
+hello-world             latest              fce289e99eb9        7 months ago        1.84kB
+
+The main differences in outputs of docker inspect <container_id> vs docker inspect <image_id>:
+Comparison table of Container and Image characteristics:
+---------------------------------------------------------------------------------
+          Container:			|                Image:
+---------------------------------------------------------------------------------
+"Image": - base ImageID			| "Parent": - parent image = base ImageID
+					| and "Container" = Container Id
+---------------------------------------------------------------------------------
+ - current state  
+---------------------------------------------------------------------------------
+"State": {				|
+            "Status": "running",	|     absent!
+            "Running": true,		|
+---------------------------------------------------------------------------------
+ - config settings:			|
+"HostConfig": CPU, Mem			|     absent!
+"Mounts":				|     absent!
+					|
+"NetworkSettings": net params		|     absent!
+---------------------------------------------------------------------------------
+					| 
+           absent!			|  "Layers": layers list
+					|
+=================================================================================
