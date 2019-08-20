@@ -4,16 +4,17 @@ ivbor7 microservices repository
 ## Homework #12 (docker-2 branch)
 
 Within the hw#12 the following tasks were done:
+ - TravisCI plugged up to current repository and integrated with Slack chat
  - Install Docker – 17.06+, docker-compose – 1.14+, docker-machine – 0.12.0+
  - major docker commands considered
  - the main differences between image and container described (*)
  - GCP preparation tasks fulfilled
- - working with Docker - 
- - docker repository structure created -
+ - working with Docker - explore main docker commands
+ - docker repository structure created
  - Dockerfile created
  - build and running the container
  - working with Dockerhub
- - create the prototype of infrastructure (*)
+ 
 
  - [x] install [docker](https://docs.docker.com/install/linux/docker-ce/ubuntu/) plus [postinstall](https://docs.docker.com/install/linux/linux-postinstall/) 
 and [docker-machine](https://docs.docker.com/machine/install-machine/)
@@ -31,9 +32,6 @@ To generate this message, Docker took the following steps:
     executable that produces the output you are currently reading.
  4. The Docker daemon streamed that output to the Docker client, which sent it
     to your terminal.
-
-To try something more ambitious, you can run an Ubuntu container with:
- $ docker run -it ubuntu bash
 ```
 
  - [x] new project "docker", ID=docker-250311 created on GCP
@@ -77,7 +75,7 @@ $ gcloud compute firewall-rules create reddit-app \
 --direction=INGRESS
 ```
  - [x] register on docker hub 
- - [x] assign a tag "reddit:latest" to our image with the reddit application onboard and push it to the docker hub for consequent using it from anywhere:
+ - [x] assign a tag "reddit:latest" to our image with the reddit application onboard and push it to the docker hub for further using it from anywhere:
  ```
 $ docker tag reddit:latest <dockerhub-login>/otus-reddit:1.0
 $ docker push <dockerhub-login>/otus-reddit:1.0
@@ -94,4 +92,6 @@ $ docker run --name reddit --rm -it <dockerhub-login>/otus-reddit:1.0 bash  <-- 
   • ps aux
   • exit
  ```
-The prototype of the project is implemented according to the following logic
+
+
+ - [ ] Extra task with (*) - create the prototype of infrastructure **in ToDo list** 

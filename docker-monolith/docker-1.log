@@ -1,9 +1,9 @@
-# the output of "docker images" before executing "docker commit":
+# the output of "docker images" command before executing "docker commit":
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
 ubuntu              16.04               5e13f8dd4c1a        3 weeks ago         120MB
 hello-world         latest              fce289e99eb9        7 months ago        1.84kB
 
-# the output of "docker images" after executing "docker commit":
+# the output of "docker images" command after executing "docker commit":
 REPOSITORY              TAG                 IMAGE ID            CREATED             SIZE
 ivbor/ubuntu-tmp-file   latest              49420032b1e6        25 seconds ago      120MB
 ubuntu                  16.04               5e13f8dd4c1a        3 weeks ago         120MB
@@ -33,3 +33,5 @@ Comparison table of Container and Image characteristics:
            absent!			|  "Layers": layers list
 					|
 =================================================================================
+So,container is a runtime instance that possess all characteristics similar to real host with set of libraries, environment vars etc needed to run an application.
+A lot of such containers can be generated from one persistent image. At the same time the image include list of layers that describes how this image was generated.
