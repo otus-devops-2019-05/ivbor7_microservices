@@ -1,0 +1,22 @@
+*.swp
+*.tmp
+*.tfstate
+*.tfstate.*.backup
+*.tfstate.backup
+*.tfvars
+.terraform/
+*.retry
+variables.json
+jdauphant.nginx
+*.key
+
+# Vagrant & molecule
+.vagrant/
+*.log
+.molecule/
+.cache
+.pytest_cache
+*.gpg
+*.py[cod]     # Will match .pyc, .pyo and .pyd files.
+__pycache__/  # Exclude the whole folder
+!docker-1.log
