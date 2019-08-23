@@ -182,20 +182,21 @@ $ docker run -d --network=reddit -p 9292:9292 --env POST_SERVICE_HOST=post_add -
 REPOSITORY             TAG                 IMAGE ID            CREATED             SIZE
 ivb/ui                 2.0                 6bd3f2d523a3        36 minutes ago      453MB
 ivb/ui                 1.0                 8bfb88638c48        5 hours ago         782MB
-
+```
  - [x] extra task with (*) - optimize image assembly using other base-images, the Alpine Linux in this particular case:
 ```
-$ docker images
-REPOSITORY             TAG                 IMAGE ID            CREATED             SIZE
-ivbdockerhub/post      3.0                 a250aa037b71        6 seconds ago       110MB
-ivbdockerhub/comment   3.0                 97f2a8416753        28 minutes ago      69.9MB
-ivbdockerhub/ui        3.0                 94f0f07d7248        53 minutes ago      71.3MB
-ivbdockerhub/ui        2.0                 6bd3f2d523a3        6 hours ago         453MB
-ivbdockerhub/ui        1.0                 8bfb88638c48        10 hours ago        782MB
-ivbdockerhub/comment   1.0                 ff6a1498524f        10 hours ago        779MB
-ivbdockerhub/post      1.0                 38f99d2f28ea        10 hours ago        199MB
+  $ docker images
+  REPOSITORY             TAG                 IMAGE ID            CREATED             SIZE
+> ivb/post               3.0                 a250aa037b71        6 seconds ago       110MB
+> ivb/comment            3.0                 97f2a8416753        28 minutes ago      69.9MB
+> ivb/ui                 3.0                 94f0f07d7248        53 minutes ago      71.3MB
+> ivb/ui                 2.0                 6bd3f2d523a3        6 hours ago         453MB
+> ivb/ui                 1.0                 8bfb88638c48        10 hours ago        782MB
+> ivb/comment            1.0                 ff6a1498524f        10 hours ago        779MB
+> ivbdockerhub/post      1.0                 38f99d2f28ea        10 hours ago        199MB
+============================================================================================
 ```
-Dockerfile.# - these files contain optimized image description for docker and are located in each folder responsible for particular microsrvice.
+Dockerfile.# - files contain optimized image description for docker and are located in each folder responsible for particular microservice.
 
  - [x] create a volume and connect it to the container with mongodb:
  ```
@@ -204,5 +205,3 @@ Dockerfile.# - these files contain optimized image description for docker and ar
 --network-alias=comment_db -v reddit_db:/data/db mongo:latest
 ```
 other microservice images: post, comment and ui can be mounted in usual way.
-
-
