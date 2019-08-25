@@ -258,9 +258,11 @@ docker run -d --network=reddit -p 9292:9292 ivb/ui:3.0
  - [x] installed docker-compose  
  - [x] assebmled reddit application images with help of docker-compose
  - [x] run reddit application using docker-compose
+ - [x] modify docker-compose.yml so as to provide possibility to parameterize port of UI service, networks aliases, service versions and some other options usin an .env file. 
 
+**Regarding the project naming logic:**
+  The default project name is the basename of the project directory. You can set a custom project name by using the -p command line option or the COMPOSE_PROJECT_NAME environment variable. For more ditails [see this](https://docs.docker.com/compose/reference/envvars/#compose-project-name) or [this](https://docs.docker.com/compose/#multiple-isolated-environments-on-a-single-host)
 
- The default project name is the basename of the project directory. You can set a custom project name by using the -p command line option or the COMPOSE_PROJECT_NAME environment variable. [see this](https://docs.docker.com/compose/reference/envvars/#compose-project-name) or [this](https://docs.docker.com/compose/#multiple-isolated-environments-on-a-single-host)
-
+ - [x] extra task 
 Differences between "volumes" and "bind mount" approach is described [there](https://docs.docker.com/storage/volumes/) 
 The new <volumes> key mounts the project directory (microservices directory) on the host to /app inside the container, allowing us to modify the code on the fly, without having to rebuild the image.

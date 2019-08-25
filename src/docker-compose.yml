@@ -1,0 +1,51 @@
+version: '3.7'
+services:
+  post_db:
+    image: mongo:${MONGODB_VER}
+    env_file: .env
+    volumes:
+      - post_db:/data/db
+    networks:
+      - ${NETW_BACK}
+  ui:
+    build: ./ui
+    image: ${USERNAME}/ui:${UI_VER}
+    env_file: .env
+    ports:
+      - ${UI_HOST_PORT}:${UI_CNTR_PORT}/tcp
+    networks:
+      - ${NETW_FRONT}
+
+  post:
+    build: ./post-py
+    image: ${USERNAME}/post:${POST_VER}
+    env_file: .env
+    networks:
+      - ${NETW_FRONT}
+      - ${NETW_BACK}
+
+  comment:
+    build: ./comment
+    image: ${USERNAME}/comment:${COMMENT_VER}
+    env_file: .env
+    networks:
+      - ${NETW_FRONT}
+      - ${NETW_BACK}
+
+volumes:
+  post_db:
+
+networks:
+  net_front:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet: ${SUBNET_FRONT}
+
+  net_back:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet: ${SUBNET_BACK}
