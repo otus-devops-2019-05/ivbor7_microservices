@@ -263,6 +263,6 @@ docker run -d --network=reddit -p 9292:9292 ivb/ui:3.0
 **Regarding the project naming logic:**
   The default project name is the basename of the project directory. You can set a custom project name by using the -p command line option or the COMPOSE_PROJECT_NAME environment variable. For more ditails [see this](https://docs.docker.com/compose/reference/envvars/#compose-project-name) or [this](https://docs.docker.com/compose/#multiple-isolated-environments-on-a-single-host)
 
- - [x] extra task 
+ - [x] extra task with (*): create a docker-compose.override.yml and provide the possibility to modify the code on the fly. Puma appliction shuold be run in debug mode and with two workers.
 Differences between "volumes" and "bind mount" approach is described [there](https://docs.docker.com/storage/volumes/) 
 The new <volumes> key mounts the project directory (microservices directory) on the host to /app inside the container, allowing us to modify the code on the fly, without having to rebuild the image.
