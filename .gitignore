@@ -20,3 +20,4 @@ jdauphant.nginx
 *.py[cod]     # Will match .pyc, .pyo and .pyd files.
 __pycache__/  # Exclude the whole folder
 !docker-1.log
+*.env

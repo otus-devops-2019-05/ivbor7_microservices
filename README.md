@@ -62,6 +62,7 @@ docker-machine create --driver google \
 --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
 --google-machine-type n1-standard-1 \
 --google-zone europe-west1-b \
+--google-project docker-250311 \
 docker-host
 . . .
 Setting Docker configuration on the remote daemon...
@@ -205,3 +206,61 @@ Dockerfile.# - files contain optimized image description for docker and are loca
 --network-alias=comment_db -v reddit_db:/data/db mongo:latest
 ```
 other microservice images: post, comment and ui can be mounted in usual way.
+
+## Homework #14 (docker-4 branch)
+
+Within the hw#14 the following tasks were done:
+ - have investigated how docker work with different network drivers (none, host and bridge) `> docker network create reddit --driver ["none","bridge","host"]`:
+   for investigation joffotron/docker-net-tools, tutum/dnsutils and nginx images were used: 
+   ```
+   docker run -ti --rm --network none joffotron/docker-net-tools -c ifconfig
+   docker run -ti --rm --network br1 joffotron/docker-net-tools -c "traceroute 127.0.0.11"
+   docker network create --driver=bridge test
+   docker run --network test tutum/dnsutils nslookup c_nginx 127.0.0.11
+   docker run --network host -d nginx
+   ```
+   to monitor net-namespaces netns utility was used on docker-host:
+   `> sudo ln -s /var/run/docker/netns /var/run/netns`
+   `> sudo ip netns`
+   to run a process in a given namespace run this command: `ip netns exec <namespace> <command>`
+   - run the containers in one reddit bridge-network 
+```
+docker run -d --network=reddit --network-alias=post_db --network-alias=comment_db mongo:latest
+docker run -d --network=reddit --network-alias=post ivb/post:3.0
+docker run -d --network=reddit --network-alias=comment ivb/comment:3.0
+docker run -d --network=reddit -p 9292:9292 ivb/ui:3.0
+```
+   - create different subnetworks:
+``` 
+> docker network create back_net --subnet=10.0.2.0/24
+> docker network create front_net --subnet=10.0.1.0/24
+```
+   - then run the containers within the subnetworks :
+```
+> docker run -d --network=front_net -p 9292:9292 --name ui <your-login>/ui:1.0
+> docker run -d --network=back_net --name comment <your-login>/comment:1.0
+> docker run -d --network=back_net --name post <your-login>/post:1.0
+> docker run -d --network=back_net --name mongo_db \
+--network-alias=post_db --network-alias=comment_db mongo:latest
+
+   - to fix the connection error "post" and "comment" containers were connected to front_net subnet. It allowed them to resolve the issue of interaction with ui container `> docker network connect <network> <container>`:
+> docker network connect front_net post
+> docker network connect front_net comment
+```
+  - bridge-utils package was installed on docker-host to show configuration info of bridges and veth-interfaces:
+```
+> docker-machine ssh docker-host
+> sudo apt-get update && sudo apt-get install bridge-utils
+> brctl show <interface>
+```
+`> sudo iptables -nL -v -t nat` - shows iptables info. POSTROUTING and DNAT chains were in our focus.
+
+ - [x] installed docker-compose  
+ - [x] assebmled reddit application images with help of docker-compose
+ - [x] run reddit application using docker-compose
+
+
+ The default project name is the basename of the project directory. You can set a custom project name by using the -p command line option or the COMPOSE_PROJECT_NAME environment variable. [see this](https://docs.docker.com/compose/reference/envvars/#compose-project-name) or [this](https://docs.docker.com/compose/#multiple-isolated-environments-on-a-single-host)
+
+Differences between "volumes" and "bind mount" approach is described [there](https://docs.docker.com/storage/volumes/) 
+The new <volumes> key mounts the project directory (microservices directory) on the host to /app inside the container, allowing us to modify the code on the fly, without having to rebuild the image.
