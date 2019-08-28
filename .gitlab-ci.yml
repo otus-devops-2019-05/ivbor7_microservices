@@ -11,10 +11,10 @@ stages:
 #  - cd reddit
 #  - bundle install
 
-#build_job:
-#  stage: build
-#  script:
-#    - echo 'Building'
+build_job:
+  stage: build
+  script:
+    - echo 'Building'
 
 #test_unit_job:
 #  stage: test
