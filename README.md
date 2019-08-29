@@ -286,10 +286,10 @@ $ gcloud compute --project=docker-250311 instances create gitlab-ci \
 --boot-disk-size=100GB \
 --boot-disk-type=pd-standard \
 --boot-disk-device-name=gitlab-ci
-```
+
  - create the firewall rules for http(s) access:
 ------------------------------------------------
-```
+
 $ gcloud compute --project=docker-250311 firewall-rules create default-allow-http \
 --direction=INGRESS \
 --priority=1000 \
@@ -307,12 +307,15 @@ $ gcloud compute --project=docker-250311 firewall-rules create default-allow-htt
 --rules=tcp:443 \
 --source-ranges=0.0.0.0/0 \
 --target-tags=https-server
-```
-and run docker and docker-compose installation using ansible:
-`$ ansible-playbook playbooks/docker-setup.yml -i dyninv.gcp.yml`
-to remove instance run the command:
-`$ gcloud compute instances delete gitlab-ci # remove GCP instance`
 
+and run docker and docker-compose installation using ansible:
+------------------------------------------------------------
+`$ ansible-playbook playbooks/docker-setup.yml -i dyninv.gcp.yml`
+
+to remove instance run the command:
+-----------------------------------
+`$ gcloud compute instances delete gitlab-ci # remove GCP instance`
+```
 Then install Docker and docker-machine using ansible or manually.
 For manual installation use this commands set:
 ```
@@ -322,7 +325,6 @@ $ apt-get update
 $ apt-get install docker-ce docker-compose
 ```
 or use docker-machine:
-----------------------
 ``` 
 docker-machine create --driver google \
 --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
@@ -371,7 +373,6 @@ $ docker run --rm -v /srv/gitlab-runner/config:/etc/gitlab-runner gitlab/gitlab-
   --access-level="not_protected"
 ```
  - after running it's needed to register my-runner:
- ----------------------------------------------------
 ```
 docker exec -it gitlab-runner gitlab-runner register --run-untagged --locked=false
 Runtime platform                                    arch=amd64 os=linux pid=20 revision=a987417a version=12.2.0
@@ -431,7 +432,6 @@ branch review:
 ```
 
 Useful links:
--------------
 [GitLab CI/CD Examples](https://docs.gitlab.com/ee/ci/examples/)
 [How To Build Docker Images and Host a Docker Image Repository with GitLab](https://www.digitalocean.com/community/tutorials/how-to-build-docker-images-and-host-a-docker-image-repository-with-gitlab)
 [Registering Runners](https://docs.gitlab.com/runner/register/)
