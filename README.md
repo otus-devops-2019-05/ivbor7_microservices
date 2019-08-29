@@ -273,17 +273,51 @@ The new <volumes> key mounts the project directory (microservices directory) on 
 
  - create vm instance via gcloud compute command group:
 ```
-$ gcloud compute --project=docker-250311 instances create gitlab-ci --zone=us-central1-a --machine-type=n1-standard-1 --subnet=default --network-tier=STANDARD --maintenance-policy=MIGRATE --service-account=613343191311-compute@developer.gserviceaccount.com --scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/trace.append --tags=http-server,https-server --image=ubuntu-1604-xenial-v20190816 --image-project=ubuntu-os-cloud --boot-disk-size=100GB --boot-disk-type=pd-standard --boot-disk-device-name=gitlab-ci --reservation-affinity=any
-
-$ gcloud compute --project=docker-250311 firewall-rules create default-allow-http --direction=INGRESS --priority=1000 --network=default --action=ALLOW --rules=tcp:80 --source-ranges=0.0.0.0/0 --target-tags=http-server
-
-$ gcloud compute --project=docker-250311 firewall-rules create default-allow-https --direction=INGRESS --priority=1000 --network=default --action=ALLOW --rules=tcp:443 --source-ranges=0.0.0.0/0 --target-tags=https-server
+$ gcloud compute --project=docker-250311 instances create gitlab-ci \
+--zone=us-central1-a \
+--machine-type=n1-standard-1 \
+--subnet=default --network-tier=STANDARD \
+--maintenance-policy=MIGRATE \
+--service-account=613343191311-compute@developer.gserviceaccount.com \
+--scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/trace.append \
+--tags=http-server,https-server \
+--image=ubuntu-1604-xenial-v20190816 \
+--image-project=ubuntu-os-cloud \
+--boot-disk-size=100GB \
+--boot-disk-type=pd-standard \
+--boot-disk-device-name=gitlab-ci
 ```
+ - create the firewall rules for http(s) access:
+------------------------------------------------
+```
+$ gcloud compute --project=docker-250311 firewall-rules create default-allow-http \
+--direction=INGRESS \
+--priority=1000 \
+--network=default \
+--action=ALLOW \
+--rules=tcp:80 \
+--source-ranges=0.0.0.0/0 \
+--target-tags=http-server
+
+$ gcloud compute --project=docker-250311 firewall-rules create default-allow-https \
+--direction=INGRESS \
+--priority=1000 \
+--network=default \
+--action=ALLOW \
+--rules=tcp:443 \
+--source-ranges=0.0.0.0/0 \
+--target-tags=https-server
+```
+ and run docker and docker-compose installation using ansible:
+---------------------------------------------------------------
+`$ ansible-playbook playbooks/docker-setup.yml -i dyninv.gcp.yml`
+
  - to remove instance run the command:
 `$ gcloud compute instances delete gitlab-ci # remove GCP instance`
 
-Then install Docker and docker-machine using ansible or manually
+Then install Docker and docker-machine using ansible or manually.
 For manual installation use this commands set:
+----------------------------------------------
 ```
 $ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 $ add-apt-repository "deb https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
@@ -291,6 +325,7 @@ $ apt-get update
 $ apt-get install docker-ce docker-compose
 ```
 or use docker-machine:
+----------------------
 ``` 
 docker-machine create --driver google \
 --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
@@ -301,9 +336,9 @@ docker-machine create --driver google \
 --google-project docker-250311 \
 gitlab-ci
 ```
- - create docker-compose.yml in /srv/gitlab folder to prepare the environment for GitlabCI. Content for docker-compose file can be obtained from this [resource](https://docs.gitlab.com/omnibus/docker/README.html#install-gitlab-using-docker-compose) 
 
-
+ - create docker-compose.yml in /srv/gitlab folder to prepare the environment for GitlabCI. 
+Content for docker-compose file can be obtained from this [resource](https://docs.gitlab.com/omnibus/docker/README.html#install-gitlab-using-docker-compose) 
  - register 1-st "my-runner"([Regestring runners](https://docs.gitlab.com/runner/register/)):
  ```
  docker run -d --name gitlab-runner --restart always \
@@ -324,8 +359,9 @@ $ sudo gitlab-runner register \
   --run-untagged="true" \
   --locked="false" \
   --access-level="not_protected"
-
+```
 and case when Runner is running in Docker-container:
+```
 $ docker run --rm -v /srv/gitlab-runner/config:/etc/gitlab-runner gitlab/gitlab-runner register \
   --non-interactive \
   --executor "docker" \
@@ -399,11 +435,19 @@ branch review:
  ```
 
 Useful links:
+~~~~~~~~~~~~~
 [GitLab CI/CD Examples](https://docs.gitlab.com/ee/ci/examples/)
+
 [How To Build Docker Images and Host a Docker Image Repository with GitLab](https://www.digitalocean.com/community/tutorials/how-to-build-docker-images-and-host-a-docker-image-repository-with-gitlab)
+
 [Registering Runners](https://docs.gitlab.com/runner/register/)
+
 [The official way of deploying a GitLab Runner instance into your Kubernetes cluster](https://docs.gitlab.com/runner/install/kubernetes.html)
+
 [Cofiguring GitLab Runner](https://docs.gitlab.com/runner/configuration/advanced-configuration.html)
+
 [How to build multiple docker containers with GitLab CI](https://stackoverflow.com/questions/50683869/how-to-build-push-and-pull-multiple-docker-containers-with-gitlab-ci)
+
 [TOML - ](https://github.com/toml-lang/toml)
+
 [Best practices for building docker images with GitLab CI](https://blog.callr.tech/building-docker-images-with-gitlab-ci-best-practices/)
