@@ -27,6 +27,7 @@ docker tag <image> username/repository:tag  # Tag <image> for upload to registry
 docker push username/repository:tag            # Upload tagged image to registry
 docker run username/repository:tag                   # Run image from a registry
  ```
+ [Top 15 Docker Commands – Docker Commands Tutorial](https://www.edureka.co/blog/docker-commands/)
  - the main differences between image and container described (*)
  - GCP preparation tasks fulfilled
  - working with Docker - explore main docker commands
@@ -268,7 +269,7 @@ Differences between "volumes" and "bind mount" approach is described [there](htt
 The new <volumes> key mounts the project directory (microservices directory) on the host to /app inside the container, allowing us to modify the code on the fly, without having to rebuild the image.
 
 
-## Homework #15 (-4 branch)
+## Homework #15 (gitlab-ci-1 branch)
 
  - create vm instance via gcloud compute command group:
 ```
@@ -277,12 +278,11 @@ $ gcloud compute --project=docker-250311 instances create gitlab-ci --zone=us-ce
 $ gcloud compute --project=docker-250311 firewall-rules create default-allow-http --direction=INGRESS --priority=1000 --network=default --action=ALLOW --rules=tcp:80 --source-ranges=0.0.0.0/0 --target-tags=http-server
 
 $ gcloud compute --project=docker-250311 firewall-rules create default-allow-https --direction=INGRESS --priority=1000 --network=default --action=ALLOW --rules=tcp:443 --source-ranges=0.0.0.0/0 --target-tags=https-server
-to remove instance run the command:
-$ gcloud compute instances delete gitlab-ci
-
 ```
+ - to remove instance run the command:
+`$ gcloud compute instances delete gitlab-ci # remove GCP instance`
 
-then install Docker and docker-machine using ansible or manually
+Then install Docker and docker-machine using ansible or manually
 For manual installation use this commands set:
 ```
 $ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
@@ -301,17 +301,46 @@ docker-machine create --driver google \
 --google-project docker-250311 \
 gitlab-ci
 ```
- - create docker-compose.yml in /srv/gitlab folder to prepare the environment for GitlabCI. Content for docker-compose file can be obrained from this [resource](https://docs.gitlab.com/omnibus/docker/README.html#install-gitlab-using-docker-compose) 
+ - create docker-compose.yml in /srv/gitlab folder to prepare the environment for GitlabCI. Content for docker-compose file can be obtained from this [resource](https://docs.gitlab.com/omnibus/docker/README.html#install-gitlab-using-docker-compose) 
 
 
- - register 1-st "my-runner":
+ - register 1-st "my-runner"([Regestring runners](https://docs.gitlab.com/runner/register/)):
  ```
  docker run -d --name gitlab-runner --restart always \
 -v /srv/gitlab-runner/config:/etc/gitlab-runner \
 -v /var/run/docker.sock:/var/run/docker.sock \
 gitlab/gitlab-runner:latest
+```
+[One-line registration command](https://docs.gitlab.com/runner/register/#one-line-registration-command):
+```
+$ sudo gitlab-runner register \
+  --non-interactive \
+  --url "https://gitlab.com/" \
+  --registration-token "PROJECT_REGISTRATION_TOKEN" \
+  --executor "docker" \
+  --docker-image alpine:latest \
+  --description "docker-runner" \
+  --tag-list "docker,aws,linux,xenial,ubuntu,docker" \
+  --run-untagged="true" \
+  --locked="false" \
+  --access-level="not_protected"
+
+and case when Runner is running in Docker-container:
+$ docker run --rm -v /srv/gitlab-runner/config:/etc/gitlab-runner gitlab/gitlab-runner register \
+  --non-interactive \
+  --executor "docker" \
+  --docker-image alpine:latest \
+  --url "https://gitlab.com/" \
+  --registration-token "PROJECT_REGISTRATION_TOKEN" \
+  --description "docker-runner" \
+  --tag-list "docker,aws,linux,xenial,ubuntu,docker" \
+  --run-untagged="true" \
+  --locked="false" \
+  --access-level="not_protected"
+```
  - after running it's needed to register my-runner:
  ----------------------------------------------------
+```
 docker exec -it gitlab-runner gitlab-runner register --run-untagged --locked=false
 Runtime platform                                    arch=amd64 os=linux pid=20 revision=a987417a version=12.2.0
 Running in system-mode.                            
@@ -319,12 +348,12 @@ Running in system-mode.
 Please enter the gitlab-ci coordinator URL (e.g. https://gitlab.com/):
 http://35.208.30.171/
 Please enter the gitlab-ci token for this runner:
-4wusEQuUdkJsm4TkFPQ9
+4wuersUSUdkJsm5TkFR1O
 Please enter the gitlab-ci description for this runner:
 [8c73878a4efb]: my-runner
 Please enter the gitlab-ci tags for this runner (comma separated):
 linux,xenial,ubuntu,docker
-Registering runner... succeeded                     runner=4wusEQuU
+Registering runner... succeeded                     runner=4wuersUS
 Please enter the executor: custom, docker-ssh, shell, virtualbox, docker-ssh+machine, kubernetes, docker, parallels, ssh, docker+machine:
 docker
 Please enter the default Docker image (e.g. ruby:2.6):
@@ -332,5 +361,49 @@ alpine:latest
 Runner registered successfully. Feel free to start it, but if it's running already the config should be automatically reloaded! 
  ```
  - added reddit application tests in .gitlab-ci.yml
- - added dev-environment 
- 
+ - added dev-environment to deploy our application after each commit 
+ - added two additional stages: stage и production, for deploying the application:
+   - in manual mode:
+```
+staging:
+  stage: stage
+  when: manual
+``` 
+- added version filter semver-tag as a deployment restriction on stage and production envs:
+```
+staging:
+  stage: stage
+    when: manual
+    only:
+      - /^\d+\.\d+\.\d+/
+```
+in such case, only the commit marked with tag with version number will run the full pipline:
+```
+git commit -a -m ‘#4 add logout button to profile page’
+git tag 2.4.10
+git push gitlab gitlab-ci-1 --tags
+```
+
+ - added job for creating the dynamic environment for any branch except the master:
+ ```
+branch review:
+  stage: review
+  script: echo "Deploy to $CI_ENVIRONMENT_SLUG"
+  environment:
+    name: branch/$CI_COMMIT_REF_NAME
+    url: http://$CI_ENVIRONMENT_SLUG.example.com
+  only:
+    - branches
+  except:
+    - master
+ ```
+
+Useful links:
+[GitLab CI/CD Examples](https://docs.gitlab.com/ee/ci/examples/)
+[How To Build Docker Images and Host a Docker Image Repository with GitLab](https://www.digitalocean.com/community/tutorials/how-to-build-docker-images-and-host-a-docker-image-repository-with-gitlab)
+[Registering Runners](https://docs.gitlab.com/runner/register/)
+[The official way of deploying a GitLab Runner instance into your Kubernetes cluster](https://docs.gitlab.com/runner/install/kubernetes.html)
+[Cofiguring GitLab Runner](https://docs.gitlab.com/runner/configuration/advanced-configuration.html)
+[How to build multiple docker containers with GitLab CI](https://stackoverflow.com/questions/50683869/how-to-build-push-and-pull-multiple-docker-containers-with-gitlab-ci)
+[TOML - ](https://github.com/toml-lang/toml)
+[Best practices for building docker images with GitLab CI](https://blog.callr.tech/building-docker-images-with-gitlab-ci-best-practices/)
