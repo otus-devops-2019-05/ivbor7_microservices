@@ -336,11 +336,10 @@ docker-machine create --driver google \
 --google-project docker-250311 \
 gitlab-ci
 ```
-
  - create docker-compose.yml in /srv/gitlab folder to prepare the environment for GitlabCI. 
 Content for docker-compose file can be obtained from this [resource](https://docs.gitlab.com/omnibus/docker/README.html#install-gitlab-using-docker-compose) 
  - register 1-st "my-runner"([Regestring runners](https://docs.gitlab.com/runner/register/)):
- ```
+```
  docker run -d --name gitlab-runner --restart always \
 -v /srv/gitlab-runner/config:/etc/gitlab-runner \
 -v /var/run/docker.sock:/var/run/docker.sock \
@@ -421,7 +420,7 @@ git push gitlab gitlab-ci-1 --tags
 ```
 
  - added job for creating the dynamic environment for any branch except the master:
- ```
+```
 branch review:
   stage: review
   script: echo "Deploy to $CI_ENVIRONMENT_SLUG"
@@ -432,22 +431,15 @@ branch review:
     - branches
   except:
     - master
- ```
+```
 
 Useful links:
 ~~~~~~~~~~~~~
 [GitLab CI/CD Examples](https://docs.gitlab.com/ee/ci/examples/)
-
 [How To Build Docker Images and Host a Docker Image Repository with GitLab](https://www.digitalocean.com/community/tutorials/how-to-build-docker-images-and-host-a-docker-image-repository-with-gitlab)
-
 [Registering Runners](https://docs.gitlab.com/runner/register/)
-
 [The official way of deploying a GitLab Runner instance into your Kubernetes cluster](https://docs.gitlab.com/runner/install/kubernetes.html)
-
 [Cofiguring GitLab Runner](https://docs.gitlab.com/runner/configuration/advanced-configuration.html)
-
 [How to build multiple docker containers with GitLab CI](https://stackoverflow.com/questions/50683869/how-to-build-push-and-pull-multiple-docker-containers-with-gitlab-ci)
-
 [TOML - ](https://github.com/toml-lang/toml)
-
 [Best practices for building docker images with GitLab CI](https://blog.callr.tech/building-docker-images-with-gitlab-ci-best-practices/)
