@@ -308,16 +308,13 @@ $ gcloud compute --project=docker-250311 firewall-rules create default-allow-htt
 --source-ranges=0.0.0.0/0 \
 --target-tags=https-server
 ```
- and run docker and docker-compose installation using ansible:
----------------------------------------------------------------
+and run docker and docker-compose installation using ansible:
 `$ ansible-playbook playbooks/docker-setup.yml -i dyninv.gcp.yml`
-
- - to remove instance run the command:
+to remove instance run the command:
 `$ gcloud compute instances delete gitlab-ci # remove GCP instance`
 
 Then install Docker and docker-machine using ansible or manually.
 For manual installation use this commands set:
-----------------------------------------------
 ```
 $ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 $ add-apt-repository "deb https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
@@ -434,7 +431,7 @@ branch review:
 ```
 
 Useful links:
-~~~~~~~~~~~~~
+-------------
 [GitLab CI/CD Examples](https://docs.gitlab.com/ee/ci/examples/)
 [How To Build Docker Images and Host a Docker Image Repository with GitLab](https://www.digitalocean.com/community/tutorials/how-to-build-docker-images-and-host-a-docker-image-repository-with-gitlab)
 [Registering Runners](https://docs.gitlab.com/runner/register/)
