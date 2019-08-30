@@ -1,0 +1,102 @@
+---
+- hosts: all
+  become: true
+  vars:
+    remote_user: appuser
+    docker_group: docker
+    create_containers: 1
+    default_container_name: gitlab-ci
+    default_container_image: ubuntu
+    default_container_command: sleep 6h
+
+  tasks:
+    # Install aptitude, which is preferred by Ansible as an alternative to the apt package manager.
+    - name: Install aptitude using apt
+      apt: name=aptitude state=latest update_cache=yes force_apt_get=yes
+
+    # Install the required system packages: sudo apt-get install *
+    - name: Install required system packages
+      apt:  name={{ item }} state=latest update_cache=yes
+#      loop: [ 'apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common']
+      loop: [ 'apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common', 'python-pip', 'virtualenv', 'python-setuptools']
+      tags: docker
+
+    # curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      tags: docker
+     
+    #sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubunt$
+    - name: Add stable Docker Repository
+      apt_repository:
+        # repo ubuntu 16.04
+        repo: deb https://download.docker.com/linux/ubuntu xenial stable
+
+        # repo for ubuntu 18.04
+        # repo: deb https://download.docker.com/linux/ubuntu bionic stable
+        state: present
+        update_cache: yes
+      tags: docker
+
+    # sudo apt-get update && sudo apt-get install docker-ce latest
+    - name: Update apt and install docker-ce
+      apt: update_cache=yes name=docker-ce state=latest
+      notify: Start docker on boot
+      tags:
+        - docker
+
+    # sudo apt-get install docker-compose=1.8.*
+    # or pip install docker-compose
+    - name: Install docker-compose
+      pip:
+        name: docker-compose
+        state: present
+#        update_cache: yes
+      tags:
+        - docker
+
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+
+    # sudo groupadd docker
+    - name: Create "docker" group
+      group:
+        name: "{{ docker_group }}"
+        state: present
+      tags: 
+        - docker
+ 
+    # sudo usermod -aG docker ubuntu
+    - name: Add remote "appuser" user to "docker" group
+      user:
+        name: "{{ remote_user }}"
+        group: "{{ docker_group }}"
+        append: yes
+      tags:
+        - docker
+
+    # Pull image specified by variable default_image from the Docker Hub
+    - name: Pull default Docker image
+      docker_image:
+        name: "{{ default_container_image }}"
+        source: pull
+
+    # Creates the number of containers defined by the variable create_containers, using default values
+    - name: Create default containers
+      docker_container:
+        name: "{{ default_container_name }}{{ item }}"
+        image: "{{ default_container_image }}"
+        command: "{{ default_container_command }}"
+        state: present
+      with_sequence: count={{ create_containers }}
+
+  handlers:
+  # sudo systemctl enable docker
+    - name: Start docker on boot
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
