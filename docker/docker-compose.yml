@@ -1,49 +1,77 @@
 version: '3.5'
 services:
   post_db:
+    hostname: post_db
     image: mongo:${MONGODB_VER}
-    env_file: .env
+#    env_file: .env
     volumes:
       - post_db:/data/db
     networks:
-      - ${NETW_BACK}
+      backend_net:
+        aliases:
+          - post_db
+          - comment_db
+
   ui:
-    build: ./ui
+    hostname: ui
+#    build: ./ui
     image: ${USERNAME}/ui:${UI_VER}
-    env_file: .env
     ports:
       - ${UI_HOST_PORT}:${UI_CNTR_PORT}/tcp
     networks:
-      - ${NETW_FRONT}
+      - ${NETW_BACK}
 
   post:
-    build: ./post-py
+    hostname: post
+#    build: ./post-py
     image: ${USERNAME}/post:${POST_VER}
-    env_file: .env
     networks:
       - ${NETW_FRONT}
       - ${NETW_BACK}
 
   comment:
-    build: ./comment
+    hostname: comment
+#    build: ./comment
     image: ${USERNAME}/comment:${COMMENT_VER}
-    env_file: .env
     networks:
       - ${NETW_FRONT}
       - ${NETW_BACK}
+#      - reddit_front
+#      - reddit_back
+
+  prometheus:
+    hostname: prometheus
+    image: ${USERNAME}/prometheus
+    ports:
+      - '9090:9090'
+    volumes:
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention=1d'
+    networks:
+      - ${NETW_FRONT}
+      - ${NETW_BACK}
+#      - reddit_front
+#      - reddit_back
+
 
 volumes:
   post_db:
+  prometheus_data:
 
 networks:
-  net_front:
+  frontend_net:
+    name: ${NETW_FRONT}
     driver: bridge
     ipam:
       driver: default
       config:
       - subnet: ${SUBNET_FRONT}
 
-  net_back:
+  backend_net:
+    name: ${NETW_BACK}
     driver: bridge
     ipam:
       driver: default
