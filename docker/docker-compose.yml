@@ -1,5 +1,37 @@
 version: '3.5'
 services:
+
+  node-exporter:
+    hostname: node-exporter
+    image: prom/node-exporter:v0.15.2
+    user: root
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
+    networks:
+      - ${NETW_FRONT}
+      - ${NETW_BACK}
+
+  mongodb-exporter:
+    hostname: mongodb-exporter
+#   build: . 
+    image: ivbdockerhub/mongodb-exporter:1.0
+    command:
+      - '--mongodb.uri=mongodb://post_db:27017'
+#      - '--groups.enabled=asserts,durability,background_flusshing,connections,extra_info,global_lock,index_counters,network,op_counters,op_counters_repl,memory,locks,metrics'
+      - '--collect.collection'
+      - '--collect.database'
+    restart: always
+    ports:
+      - 9216:9216
+    networks:
+      - ${NETW_BACK}
+
   post_db:
     hostname: post_db
     image: mongo:${MONGODB_VER}
@@ -36,8 +68,6 @@ services:
     networks:
       - ${NETW_FRONT}
       - ${NETW_BACK}
-#      - reddit_front
-#      - reddit_back
 
   prometheus:
     hostname: prometheus
@@ -53,8 +83,6 @@ services:
     networks:
       - ${NETW_FRONT}
       - ${NETW_BACK}
-#      - reddit_front
-#      - reddit_back
 
 
 volumes:
