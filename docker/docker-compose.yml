@@ -25,11 +25,24 @@ services:
       - '--mongodb.uri=mongodb://post_db:27017'
 #      - '--groups.enabled=asserts,durability,background_flusshing,connections,extra_info,global_lock,index_counters,network,op_counters,op_counters_repl,memory,locks,metrics'
       - '--collect.collection'
-      - '--collect.database'
+#      - '--collect.database'
     restart: always
     ports:
       - 9216:9216
     networks:
+      - ${NETW_BACK}
+
+  blackbox-exporter:
+    hostname: blackbox-exporter
+    image: prom/blackbox-exporter:latest
+    volumes:
+      - '../monitoring/exporters/blackbox-exporter:/config'
+    command:
+      - '--config.file=/etc/blackbox_exporter/config.yml'
+    ports:  
+      - '9115:9115'
+    networks:
+      - ${NETW_FRONT}
       - ${NETW_BACK}
 
   post_db:
