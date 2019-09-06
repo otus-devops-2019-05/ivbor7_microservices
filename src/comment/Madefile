@@ -1,5 +1,5 @@
 DIR = $(shell basename $$PWD)
 
 $(DIR): Dockerfile docker_build.sh
-	@echo "$$(date +"%Y-%m-%d %H:%M:%S") build $(DIR) image for $(USER_NAME)" >> ~/Otus/ivbor7_microservices/make_info.log
+	@echo "$$(date +"%Y-%m-%d %H:%M:%S") build $(DIR) image for $(USER_NAME)" >> /tmp/make_info.log
 	/bin/bash docker_build.sh
