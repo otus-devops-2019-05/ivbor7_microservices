@@ -19,8 +19,8 @@ services:
 
   mongodb-exporter:
 #    hostname: mongodb-exporter
-#   build: . 
-    image: ${USER_NAME}/mongodb-exporter:1.0
+#    build: . 
+    image: ${USER_NAME}/mongodb-exporter:latest
     command:
       - '--mongodb.uri=mongodb://post_db:27017'
 #      - '--groups.enabled=asserts,durability,background_flusshing,connections,extra_info,global_lock,index_counters,network,op_counters,op_counters_repl,memory,locks,metrics'
@@ -42,8 +42,12 @@ services:
     ports:  
       - '9115:9115'
     networks:
-      - ${NETW_FRONT}
-      - ${NETW_BACK}
+      backend_net:
+        aliases:
+          - blackbox_net
+      frontend_net:
+        aliases:
+          - blackbox_net
 
   post_db:
 #    hostname: post_db

@@ -619,7 +619,8 @@ Add new target to prometheus.yml:
 ```
 
 Note: don't forget to rebuild the promethteus image: `monitoring/prometheus $ docker build -t $USER_NAME/prometheus .`
-
+Push assembled images to the Docker Registry:
+`$ docker login; for i in ui post comment prometheus mongodb_exporter; do docker push $USER_NAME/$i:latest; done`
 - [x] extra task with (*): develop the Makefile that can build any or all images and push them to the docker registry.
 Usage:
   $ make microservices - to build reddit's microservices images
@@ -636,4 +637,4 @@ Links to additional information:
   - [Configuring Kubernetes Deployments With Makefiles and Envsubst](https://blog.zikes.me/post/config-k8s-with-make/)
   - [Makefile for your dockerfiles](https://philpep.org/blog/a-makefile-for-your-dockerfiles)
 
-_IMPORTANT NOTE:_  before running Makefile, it's necessary to rename Madefile to Makefile in microservices' folders src/ui|comment|post-py
+_IMPORTANT NOTE:_ before running Makefile, it's necessary to rename Madefile to Makefile in microservices' folders src/ui|comment|post-py
