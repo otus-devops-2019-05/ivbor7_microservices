@@ -20,7 +20,7 @@ services:
   mongodb-exporter:
     hostname: mongodb-exporter
 #   build: . 
-    image: ivbdockerhub/mongodb-exporter:1.0
+    image: ${USER_NAME}/mongodb-exporter:1.0
     command:
       - '--mongodb.uri=mongodb://post_db:27017'
 #      - '--groups.enabled=asserts,durability,background_flusshing,connections,extra_info,global_lock,index_counters,network,op_counters,op_counters_repl,memory,locks,metrics'
@@ -60,7 +60,7 @@ services:
   ui:
     hostname: ui
 #    build: ./ui
-    image: ${USERNAME}/ui:${UI_VER}
+    image: ${USER_NAME}/ui:${UI_VER}
     ports:
       - ${UI_HOST_PORT}:${UI_CNTR_PORT}/tcp
     networks:
@@ -69,7 +69,7 @@ services:
   post:
     hostname: post
 #    build: ./post-py
-    image: ${USERNAME}/post:${POST_VER}
+    image: ${USER_NAME}/post:${POST_VER}
     networks:
       - ${NETW_FRONT}
       - ${NETW_BACK}
@@ -77,14 +77,14 @@ services:
   comment:
     hostname: comment
 #    build: ./comment
-    image: ${USERNAME}/comment:${COMMENT_VER}
+    image: ${USER_NAME}/comment:${COMMENT_VER}
     networks:
       - ${NETW_FRONT}
       - ${NETW_BACK}
 
   prometheus:
     hostname: prometheus
-    image: ${USERNAME}/prometheus
+    image: ${USER_NAME}/prometheus
     ports:
       - '9090:9090'
     volumes:
