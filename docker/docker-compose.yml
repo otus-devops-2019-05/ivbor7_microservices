@@ -2,7 +2,7 @@ version: '3.5'
 services:
 
   node-exporter:
-    hostname: node-exporter
+#    hostname: node-exporter
     image: prom/node-exporter:v0.15.2
     user: root
     volumes:
@@ -18,13 +18,13 @@ services:
       - ${NETW_BACK}
 
   mongodb-exporter:
-    hostname: mongodb-exporter
+#    hostname: mongodb-exporter
 #   build: . 
     image: ${USER_NAME}/mongodb-exporter:1.0
     command:
       - '--mongodb.uri=mongodb://post_db:27017'
 #      - '--groups.enabled=asserts,durability,background_flusshing,connections,extra_info,global_lock,index_counters,network,op_counters,op_counters_repl,memory,locks,metrics'
-      - '--collect.collection'
+#      - '--collect.collection'
 #      - '--collect.database'
     restart: always
     ports:
@@ -33,7 +33,7 @@ services:
       - ${NETW_BACK}
 
   blackbox-exporter:
-    hostname: blackbox-exporter
+#    hostname: blackbox-exporter
     image: prom/blackbox-exporter:latest
     volumes:
       - '../monitoring/exporters/blackbox-exporter:/config'
@@ -46,7 +46,7 @@ services:
       - ${NETW_BACK}
 
   post_db:
-    hostname: post_db
+#    hostname: post_db
     image: mongo:${MONGODB_VER}
 #    env_file: .env
     volumes:
@@ -58,7 +58,7 @@ services:
           - comment_db
 
   ui:
-    hostname: ui
+#    hostname: ui
 #    build: ./ui
     image: ${USER_NAME}/ui:${UI_VER}
     ports:
@@ -67,7 +67,7 @@ services:
       - ${NETW_BACK}
 
   post:
-    hostname: post
+#    hostname: post
 #    build: ./post-py
     image: ${USER_NAME}/post:${POST_VER}
     networks:
@@ -75,7 +75,7 @@ services:
       - ${NETW_BACK}
 
   comment:
-    hostname: comment
+#    hostname: comment
 #    build: ./comment
     image: ${USER_NAME}/comment:${COMMENT_VER}
     networks:
@@ -83,7 +83,7 @@ services:
       - ${NETW_BACK}
 
   prometheus:
-    hostname: prometheus
+#    hostname: prometheus
     image: ${USER_NAME}/prometheus
     ports:
       - '9090:9090'
