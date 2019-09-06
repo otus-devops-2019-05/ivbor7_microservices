@@ -37,11 +37,11 @@ img_build: microservices monitoring debug
 
 .PHONY: debug
 debug: ## Display current var's values
-	@echo "$$(date +"%Y-%m-%d %H:%M:%S") DockerHub: $(DOCKER_REPO)" >> make_info.txt
-	@echo "$$(date +"%Y-%m-%d %H:%M:%S") DOCKERFILES: $(DOCKERFILES)" >> make_info.txt
-	@echo "$$(date +"%Y-%m-%d %H:%M:%S") Docker's Dirs: $(DOCKERSDIRS)" >> make_info.txt 
-	@echo "$$(date +"%Y-%m-%d %H:%M:%S") MonServices: $(MON_SERVICES)" >> make_info.txt
-	@echo "=============================================================" >> make_info.txt
+	@echo "$$(date +"%Y-%m-%d %H:%M:%S") DockerHub: $(DOCKER_REPO)" >> make_info.log
+	@echo "$$(date +"%Y-%m-%d %H:%M:%S") DOCKERFILES: $(DOCKERFILES)" >> make_info.log
+	@echo "$$(date +"%Y-%m-%d %H:%M:%S") Docker's Dirs: $(DOCKERSDIRS)" >> make_info.log 
+	@echo "$$(date +"%Y-%m-%d %H:%M:%S") MonServices: $(MON_SERVICES)" >> make_info.log
+	@echo "=============================================================" >> make_info.log
 
 # microservices: post comment ui
 # Docker build reddit's microservice images using recursive Make:
