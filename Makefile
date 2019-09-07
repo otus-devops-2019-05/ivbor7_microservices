@@ -75,7 +75,7 @@ all-push: push-microservices push-monitoring dockerhub-login
 dockerhub-login: ## Login to DockerHub
 	docker login
 
-# Push monitoring images to the Docker Registry:
+# Push microservice images to the Docker Registry:
 .PHONY: push-microservices $(REDDIT_SERVICES) 
 push-microservices: $(REDDIT_IMAGES) dockerhub-login
 $(REDDIT_IMAGES):
