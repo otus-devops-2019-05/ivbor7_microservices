@@ -52,7 +52,7 @@ services:
   post_db:
 #    hostname: post_db
     image: mongo:${MONGODB_VER}
-#    env_file: .env
+    env_file: .env
     volumes:
       - post_db:/data/db
     networks:
@@ -64,6 +64,7 @@ services:
   ui:
 #    hostname: ui
 #    build: ./ui
+    env_file: .env
     image: ${USER_NAME}/ui:${UI_VER}
     ports:
       - ${UI_HOST_PORT}:${UI_CNTR_PORT}/tcp
@@ -73,6 +74,7 @@ services:
   post:
 #    hostname: post
 #    build: ./post-py
+    env_file: .env
     image: ${USER_NAME}/post:${POST_VER}
     networks:
       - ${NETW_FRONT}
@@ -81,6 +83,7 @@ services:
   comment:
 #    hostname: comment
 #    build: ./comment
+    env_file: .env
     image: ${USER_NAME}/comment:${COMMENT_VER}
     networks:
       - ${NETW_FRONT}
@@ -111,7 +114,7 @@ networks:
     name: ${NETW_FRONT}
     driver: bridge
     ipam:
-      driver: default
+      driver: bridge
       config:
       - subnet: ${SUBNET_FRONT}
 
@@ -119,6 +122,6 @@ networks:
     name: ${NETW_BACK}
     driver: bridge
     ipam:
-      driver: default
+      driver: bridge
       config:
       - subnet: ${SUBNET_BACK}

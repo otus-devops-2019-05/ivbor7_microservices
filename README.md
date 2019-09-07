@@ -619,8 +619,10 @@ Add new target to prometheus.yml:
 ```
 
 Note: don't forget to rebuild the promethteus image: `monitoring/prometheus $ docker build -t $USER_NAME/prometheus .`
+
 Push assembled images to the Docker Registry:
 `$ docker login; for i in ui post comment prometheus mongodb_exporter; do docker push $USER_NAME/$i:latest; done`
+
 - [x] extra task with (*): develop the Makefile that can build any or all images and push them to the docker registry.
 Usage:
   $ make microservices - to build reddit's microservices images
