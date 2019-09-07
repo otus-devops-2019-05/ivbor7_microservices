@@ -2,7 +2,8 @@ version: '3.5'
 services:
 
   node-exporter:
-#    hostname: node-exporter
+    hostname: node-exporter
+    container_name: node-exporter
     image: prom/node-exporter:v0.15.2
     user: root
     volumes:
@@ -18,7 +19,8 @@ services:
       - ${NETW_BACK}
 
   mongodb-exporter:
-#    hostname: mongodb-exporter
+    hostname: mongodb-exporter
+    container_name: mongodb-exporter
 #    build: . 
     image: ${USER_NAME}/mongodb-exporter:latest
     command:
@@ -33,7 +35,8 @@ services:
       - ${NETW_BACK}
 
   blackbox-exporter:
-#    hostname: blackbox-exporter
+    hostname: blackbox-exporter
+    container_name: blackbox-exporter
     image: prom/blackbox-exporter:latest
     volumes:
       - '../monitoring/exporters/blackbox-exporter:/config'
@@ -50,7 +53,8 @@ services:
           - blackbox_net
 
   post_db:
-#    hostname: post_db
+    hostname: post_db
+    container_name: post_db
     image: mongo:${MONGODB_VER}
     env_file: .env
     volumes:
@@ -62,7 +66,8 @@ services:
           - comment_db
 
   ui:
-#    hostname: ui
+    hostname: ui
+    container_name: ui
 #    build: ./ui
     env_file: .env
     image: ${USER_NAME}/ui:${UI_VER}
@@ -72,8 +77,9 @@ services:
       - ${NETW_BACK}
 
   post:
-#    hostname: post
+    hostname: post
 #    build: ./post-py
+    container_name: post
     env_file: .env
     image: ${USER_NAME}/post:${POST_VER}
     networks:
@@ -81,8 +87,9 @@ services:
       - ${NETW_BACK}
 
   comment:
-#    hostname: comment
+    hostname: comment
 #    build: ./comment
+    container_name: comment
     env_file: .env
     image: ${USER_NAME}/comment:${COMMENT_VER}
     networks:
@@ -90,7 +97,8 @@ services:
       - ${NETW_BACK}
 
   prometheus:
-#    hostname: prometheus
+    hostname: prometheus
+    container_name: prometheus
     image: ${USER_NAME}/prometheus
     ports:
       - '9090:9090'
