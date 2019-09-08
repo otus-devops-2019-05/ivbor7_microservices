@@ -458,10 +458,7 @@ Within the hw#16 the following tasks were done:
  - Prometheus: run, configure and familiarity with Web UI
  - Monitoring the microservices state
  - Collecting hosts metrics using the exporter 
- - запуск, конфигурация, знакомство с Web UI
- - Мониторинг состояния микросервисов
- - Сбор метрик хоста с использованием экспортера
- - Задания со *
+ - Extra tasks with (*)
 
  Firewall rules for Prometheus and Puma:
 ```
