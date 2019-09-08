@@ -1,0 +1,135 @@
+version: '3.5'
+services:
+
+  node-exporter:
+    hostname: node-exporter
+    container_name: node-exporter
+    image: prom/node-exporter:v0.15.2
+    user: root
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
+    networks:
+      - ${NETW_FRONT}
+      - ${NETW_BACK}
+
+  mongodb-exporter:
+    hostname: mongodb-exporter
+    container_name: mongodb-exporter
+#    build: . 
+    image: ${USER_NAME}/mongodb-exporter:latest
+    command:
+      - '--mongodb.uri=mongodb://post_db:27017'
+#      - '--groups.enabled=asserts,durability,background_flusshing,connections,extra_info,global_lock,index_counters,network,op_counters,op_counters_repl,memory,locks,metrics'
+#      - '--collect.collection'
+#      - '--collect.database'
+    restart: always
+    ports:
+      - 9216:9216
+    networks:
+      - ${NETW_BACK}
+
+  blackbox-exporter:
+    hostname: blackbox-exporter
+    container_name: blackbox-exporter
+    image: prom/blackbox-exporter:latest
+    volumes:
+      - '../monitoring/exporters/blackbox-exporter:/config'
+    command:
+      - '--config.file=/etc/blackbox_exporter/config.yml'
+    ports:  
+      - '9115:9115'
+    networks:
+      backend_net:
+        aliases:
+          - blackbox_net
+      frontend_net:
+        aliases:
+          - blackbox_net
+
+  post_db:
+    hostname: post_db
+    container_name: post_db
+    image: mongo:${MONGODB_VER}
+    env_file: .env
+    volumes:
+      - post_db:/data/db
+    networks:
+      backend_net:
+        aliases:
+          - post_db
+          - comment_db
+
+  ui:
+    hostname: ui
+    container_name: ui
+#    build: ./ui
+    env_file: .env
+    image: ${USER_NAME}/ui:${UI_VER}
+    ports:
+      - ${UI_HOST_PORT}:${UI_CNTR_PORT}/tcp
+    networks:
+      - ${NETW_BACK}
+
+  post:
+    hostname: post
+#    build: ./post-py
+    container_name: post
+    env_file: .env
+    image: ${USER_NAME}/post:${POST_VER}
+    networks:
+      - ${NETW_FRONT}
+      - ${NETW_BACK}
+
+  comment:
+    hostname: comment
+#    build: ./comment
+    container_name: comment
+    env_file: .env
+    image: ${USER_NAME}/comment:${COMMENT_VER}
+    networks:
+      - ${NETW_FRONT}
+      - ${NETW_BACK}
+
+  prometheus:
+    hostname: prometheus
+    container_name: prometheus
+    image: ${USER_NAME}/prometheus
+    ports:
+      - '9090:9090'
+    volumes:
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention=1d'
+    networks:
+      - ${NETW_FRONT}
+      - ${NETW_BACK}
+
+
+volumes:
+  post_db:
+  prometheus_data:
+
+networks:
+  frontend_net:
+    name: ${NETW_FRONT}
+    driver: bridge
+    ipam:
+      driver: bridge
+      config:
+      - subnet: ${SUBNET_FRONT}
+
+  backend_net:
+    name: ${NETW_BACK}
+    driver: bridge
+    ipam:
+      driver: bridge
+      config:
+      - subnet: ${SUBNET_BACK}

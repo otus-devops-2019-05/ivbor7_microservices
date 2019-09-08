@@ -27,6 +27,15 @@ docker tag <image> username/repository:tag  # Tag <image> for upload to registry
 docker push username/repository:tag            # Upload tagged image to registry
 docker run username/repository:tag                   # Run image from a registry
  ```
+
+**Image testing**
+> [goss](https://github.com/aelsabbahy/goss) - утилита для тестирования инфраструктуры
+
+> [dgoss](https://github.com/aelsabbahy/goss/tree/master/extras/dgoss) - обертка на bash, запускающая 
+контейнер из данного образа и выполняющая тесты
+
+> [Container-structure-test](https://github.com/GoogleContainerTools/container-structure-test) от Google
+
  [Top 15 Docker Commands – Docker Commands Tutorial](https://www.edureka.co/blog/docker-commands/)
  - the main differences between image and container described (*)
  - GCP preparation tasks fulfilled
@@ -372,12 +381,13 @@ $ docker run --rm -v /srv/gitlab-runner/config:/etc/gitlab-runner gitlab/gitlab-
   --locked="false" \
   --access-level="not_protected"
 ```
+
  - after running it's needed to register my-runner:
-```
+
+```bash
 docker exec -it gitlab-runner gitlab-runner register --run-untagged --locked=false
 Runtime platform                                    arch=amd64 os=linux pid=20 revision=a987417a version=12.2.0
-Running in system-mode.                            
-                                                   
+Running in system-mode.
 Please enter the gitlab-ci coordinator URL (e.g. https://gitlab.com/):
 http://35.208.30.171/
 Please enter the gitlab-ci token for this runner:
@@ -391,8 +401,9 @@ Please enter the executor: custom, docker-ssh, shell, virtualbox, docker-ssh+mac
 docker
 Please enter the default Docker image (e.g. ruby:2.6):
 alpine:latest
-Runner registered successfully. Feel free to start it, but if it's running already the config should be automatically reloaded! 
- ```
+Runner registered successfully. Feel free to start it, but if it's running already the config should be automatically reloaded!
+```
+
  - added reddit application tests in .gitlab-ci.yml
  - added dev-environment to deploy our application after each commit 
  - added two additional stages: stage и production, for deploying the application:
@@ -440,3 +451,189 @@ Useful links:
 [How to build multiple docker containers with GitLab CI](https://stackoverflow.com/questions/50683869/how-to-build-push-and-pull-multiple-docker-containers-with-gitlab-ci)
 [TOML - ](https://github.com/toml-lang/toml)
 [Best practices for building docker images with GitLab CI](https://blog.callr.tech/building-docker-images-with-gitlab-ci-best-practices/)
+
+## Homework #16 (monitoring-1 branch)
+
+Within the hw#16 the following tasks were done:
+ - Prometheus: run, configure and familiarity with Web UI
+ - Monitoring the microservices state
+ - Collecting hosts metrics using the exporter 
+ - Extra tasks with (*)
+
+ Firewall rules for Prometheus and Puma:
+```
+$ gcloud compute firewall-rules create prometheus-default --allow tcp:9090
+$ gcloud compute firewall-rules create puma-default --allow tcp:9292
+```
+Create a Docker host in DCE:
+```
+docker-machine create --driver google \
+--google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
+--google-machine-type n1-standard-1 \
+--google-zone europe-west1-b \
+--google-project docker-250311 \
+docker-host
+```
+configure local env for prometheus, cd to monitoring and switch to docker-host:
+`eval $(docker-machine env docker-host)`
+
+Run Prometheus monitoring system in Docker container:
+```
+$ docker run --rm -p 9090:9090 -d --name prometheus  prom/prometheus:v2.1.0
+$ docker-machine ip docker-host
+35.187.69.99
+$ docker stop prometheus
+```
+ - Repos structure: docker-monolith folder, .env, docker-compose.* was sreamlined for subsequent monitoring
+```
+ rename {src => docker}/.env.example (100%)
+ rename {src => docker}/docker-compose.override.yml (100%)
+ rename {src => docker}/docker-compose.yml (100%)
+ rename {docker-monolith => docker/docker-monolith}/Dockerfile (100%)
+ rename {docker-monolith => docker/docker-monolith}/db_config (100%)
+ rename {docker-monolith => docker/docker-monolith}/docker-1.log (100%)
+ rename {docker-monolith => docker/docker-monolith}/mongod.conf (100%)
+ rename {docker-monolith => docker/docker-monolith}/start.sh (100%)
+```
+
+The entire configuration of Prometheus, unlike many other monitoring systems going through 
+configuration files and command line options.
+- assemble the Prometheus image :
+```
+$ export USER_NAME=username
+$ docker build -t $USER_NAME/prometheus .
+```
+then build images for each microservice in their folders:
+`for i in ui post-py comment; do cd src/$i; bash docker_build.sh; cd -; done`
+All this images contain healthcheck inside that checks if the services are alive
+Running the docker-compose we've encountered an issue connected with network name generating.
+The network that docker-compose creates for us has a funky name. It takes the name of the current directory and then concatenates it with the service name, and then an index. This will break things.
+
+- [x] added node-exporter into docker container to collect info regarding Docker itself
+- [x] all created images were pushed to docker registry, available at this [link][https://cloud.docker.com/u/ivbdockerhub/repository/list]
+
+- [x] - extra task with (*): monitoring MongoDB using the exporter. 
+[Exporters and Integrations](https://prometheus.io/docs/instrumenting/exporters/). There are a lot of libraries and servers which help in exporting existing metrics from third-party systems as Prometheus metrics. As for [MongoDB Exporter](https://github.com/dcu/mongodb_exporter) it's not supported for now. So, I've used [Percona MongoDB exporter](https://github.com/percona/mongodb_exporter) Based on MongoDB exporter by David Cuadrado (@dcu), but forked for full sharded support and structure changes.
+
+Assemble the docker image based on official image:
+
+```bash
+git clone git@github.com:percona/mongodb_exporter.git && rm -rf ./mongodb_exporter/.git && cd  mongodb_exporter/
+docker build -t ivbdockerhub/mongodb-exporter:1.0 .
+docker push $USER_NAME/mongodb-exporter
+```
+
+The following options may be passed to the [mongodb:metrics](https://libraries.io/github/percona/mongodb_exporter) monitoring service as additional options:
+
+```bash
+--mongodb.uri=mongodb://root:example@mongodb:27017 
+--groups.enabled 'asserts,durability,background_flusshing,connections,extra_info,global_lock,index_count'
+--restart=always'
+--collect.database
+```
+
+mongodb_extra_info_page_faults_total comes from "extra_info" group, which is governed by the `-groups.enabled` option
+the following code added into docker-compose.yml:
+
+```yml
+  mongodb-exporter:
+    hostname: mongodb-exporter
+#   build: .
+    image: ivbdockerhub/mongodb-exporter:1.0
+    command:
+      - '--mongodb.uri=mongodb://post_db:27017'
+#      - '--groups.enabled=asserts,durability,background_flusshing,connections,extra_info,global_lock,index_counters,network,op_counters,op_counters_repl,memory,locks,metri$
+      - '--collect.collection'
+      - '--collect.database'
+    restart: always
+    ports:
+      - 9216:9216
+    networks:
+      - ${NETW_BACK}
+```
+
+In Promethteus's config file promtheus.yml additional job 'mongodb-exporter' was added:
+
+```yml
+  - job_name: 'mongodb-exporter'
+    static_configs:
+      - targets: ['mongodb-exporter:9216']
+```
+
+after this rebuild docker image for Prometheus: `docker build -t $USER_NAME/prometheus .`
+Then run monitoring in docker container from the docker folder: `docker-compose up -d`
+
+To calculate how many containers are present and running execute these commands:
+
+```bash
+$ docker ps | sed -n '1!p'| /usr/bin/wc -l | sed -ne 's/^/node_docker_containers_running_total /p'
+node_docker_containers_running_total 7
+$ docker ps -a | sed -n '1!p'| /usr/bin/wc -l | sed -ne 's/^/node_docker_containers_total /p'
+node_docker_containers_total 7
+```
+
+run the docker-compose: `docker-compose up -d`
+mongodb_up and mongodb_network_bytes_total metrics were analyzed during switching the post_db service
+
+- [x] extra task with (*): use Blackbox Exporter for services monitoring Prometheus [this example of code](https://kamaok.org.ua/?p=3090) might be useful.
+
+Configure docker-compose adding the blackbox service:
+
+```yml
+  blackbox-exporter:
+    hostname: blackbox-exporter
+    image: prom/blackbox-exporter:latest
+    volumes:
+      - '../monitoring/exporters/blackbox-exporter:/config'
+    command:
+      - '--config.file=/etc/blackbox_exporter/config.yml'
+    ports:
+      - '9115:9115'
+    networks:
+      - ${NETW_FRONT}
+      - ${NETW_BACK}
+```
+
+Add new target to prometheus.yml:
+
+```yml
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]  # Look for a HTTP 200 response.
+    static_configs:
+      - targets:
+        - http://ui:9292
+        - http://post:5000
+        - http://comment:9292
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115  # The blackbox exporter's real hostname:port.
+```
+
+Note: don't forget to rebuild the promethteus image: `monitoring/prometheus $ docker build -t $USER_NAME/prometheus .`
+
+Push assembled images to the Docker Registry:
+`$ docker login; for i in ui post comment prometheus mongodb_exporter; do docker push $USER_NAME/$i:latest; done`
+
+- [x] extra task with (*): develop the Makefile that can build any or all images and push them to the docker registry.
+Usage:
+  $ make microservices - to build reddit's microservices images
+  $ make monitoring - to build monitoring images (prometheus, exporters)
+  $ make push-microservices - pushing created microservices images to Docker Registry 
+  $ make push-monitoring - pushing created images for monitoring to Docker Registry
+
+Links to additional information: 
+  - [GNU make rus](http://www.linuxlib.ru/prog/make_379_manual.html)
+  - [GNU make en](http://www.gnu.org/software/make/manual/make.html)
+  - [GNU make: Constructed Macro Names](http://make.mad-scientist.net/constructed-macro-names/)
+  - [Docker & Makefile](https://itnext.io/docker-makefile-x-ops-sharing-infra-as-code-parts-ea6fa0d22946)
+  - [Makefile to build, run, tag and publish a docker containier](https://gist.github.com/mpneuried/0594963ad38e68917ef189b4e6a269db)
+  - [Configuring Kubernetes Deployments With Makefiles and Envsubst](https://blog.zikes.me/post/config-k8s-with-make/)
+  - [Makefile for your dockerfiles](https://philpep.org/blog/a-makefile-for-your-dockerfiles)
+
+_IMPORTANT NOTE:_ before running Makefile, it's necessary to rename Madefile to Makefile in microservices' folders src/ui|comment|post-py

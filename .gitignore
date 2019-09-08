@@ -21,3 +21,7 @@ jdauphant.nginx
 __pycache__/  # Exclude the whole folder
 !docker-1.log
 *.env
+
+# MongoDB Eporter repo folder filtered
+monitoring/exporters/
+
