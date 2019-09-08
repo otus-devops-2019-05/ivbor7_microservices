@@ -1,6 +1,14 @@
 # ivbor7_microservices
 ivbor7 microservices repository
 
+## Table of Contents:
+ - [HW#12 (docker-2): branch: TravisCI, Docker, Docker-compose](#homework-#12-(docker-2-branch))
+ - [HW#13 (docker-3): branch: Microservices](#homework-#13-(docker-3-branch))
+ - [HW#14 (docker-4): Docker network](#homework-#14-(docker-4-branch))
+ - [HW#15 (docker-5) GitlabCI arrangement](#homework-#15-(gitlab-ci-1-branch))
+ - [HW#16 (monitoring-1): Introduction to monitoring systems](#homework-#16-(monitoring-1-branch))
+ - [HW#17 (monitoring-2): Application and Infrastructure monitoring](#homework-#17-(monitoring-2-branch))
+
 ## Homework #12 (docker-2 branch)
 
 Within the hw#12 the following tasks were done:
@@ -64,9 +72,10 @@ To generate this message, Docker took the following steps:
     to your terminal.
 ```
 
- - [x] new project "docker", ID=docker-250311 created on GCP
- - [x] create Docker-host on GCP with Docker installed:
-```
+- [x] new project "docker", ID=docker-250311 created on GCP
+- [x] create Docker-host on GCP with Docker installed:
+
+```sh
 export GOOGLE_PROJECT=docker-250311
 docker-machine create --driver google \
 --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
@@ -83,22 +92,24 @@ $ docker-machine ls
 NAME          ACTIVE   DRIVER   STATE     URL                         SWARM   DOCKER     ERRORS
 docker-host   -        google   Running   tcp://104.155.51.208:2376           v19.03.1
 ```
-  - to switch to a remote host run command `$ eval $(docker-machine env docker-host)` after that all subsequent commands will be executed on remote GCP host via docker daemon.
-  - `eval $(docker-machine env --unset)` - use this command to switch to local docker
-  - `docker-machine rm <host-name>` - use this command to remove instance
 
- - [x] compare outputs of the comman1ds from lecture  
+- to switch to a remote host run command `$ eval $(docker-machine env docker-host)` after that all subsequent commands will be executed on remote GCP host via docker daemon.
+- `eval $(docker-machine env --unset)` - use this command to switch to local docker
+- `docker-machine rm <host-name>` - use this command to remove instance
+
+- [x] compare outputs of the comman1ds from lecture  
    `$ docker run --rm -ti tehbilly/htop`
-     - the only one running process (htop) with PID=1
+    - the only one running process (htop) with PID=1
  
    `$ docker run --rm --pid host -ti tehbilly/htop`
-     - we can see all processes running on host system including docker-daemon's worker processes in -namespace moby 
+    - we can see all processes running on host system including docker-daemon's worker processes in -namespace moby 
 
  - [x] create Dockerfile to build image with help Docker:
  `$ docker build -t reddit:latest .` 
  Attention: the dot "." at the end of command is mandatory. It points the path to Docker context(see the command output 1-st line: `Sending build context to Docker daemon   7.68kB`).
 Run the created container running the command: `docker run --name reddit -d --network=host reddit:latest` After running the container the service running on this host was not reachable due to the lack of appropriate firewall rule. To fix this issue add the firewall rule:
-```
+
+```sh
 $ gcloud compute firewall-rules create reddit-app \
 --allow tcp:9292 \
 --target-tags=docker-machine \
@@ -127,6 +138,7 @@ $ docker run --name reddit --rm -it <dockerhub-login>/otus-reddit:1.0 bash  <-- 
 
  - [ ] Extra task with (*) - create the prototype of infrastructure **in ToDo list** 
 
+[.#hw13]:
 
 ## Homework #13 (docker-3 branch)
 
@@ -217,6 +229,7 @@ Dockerfile.# - files contain optimized image description for docker and are loca
 ```
 other microservice images: post, comment and ui can be mounted in usual way.
 
+[#hw14]:
 ## Homework #14 (docker-4 branch)
 
 Within the hw#14 the following tasks were done:
@@ -277,11 +290,11 @@ docker run -d --network=reddit -p 9292:9292 ivb/ui:3.0
 Differences between "volumes" and "bind mount" approach is described [there](https://docs.docker.com/storage/volumes/) 
 The new <volumes> key mounts the project directory (microservices directory) on the host to /app inside the container, allowing us to modify the code on the fly, without having to rebuild the image.
 
-
 ## Homework #15 (gitlab-ci-1 branch)
 
  - create vm instance via gcloud compute command group:
-```
+
+```sh
 $ gcloud compute --project=docker-250311 instances create gitlab-ci \
 --zone=us-central1-a \
 --machine-type=n1-standard-1 \
@@ -325,16 +338,20 @@ to remove instance run the command:
 -----------------------------------
 `$ gcloud compute instances delete gitlab-ci # remove GCP instance`
 ```
+
 Then install Docker and docker-machine using ansible or manually.
 For manual installation use this commands set:
+
+```bash
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+add-apt-repository "deb https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+apt-get update
+apt-get install docker-ce docker-compose
 ```
-$ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-$ add-apt-repository "deb https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-$ apt-get update
-$ apt-get install docker-ce docker-compose
-```
+
 or use docker-machine:
-``` 
+
+```sh 
 docker-machine create --driver google \
 --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
 --google-machine-type n1-standard-1 \
@@ -352,9 +369,12 @@ Content for docker-compose file can be obtained from this [resource](https://doc
 -v /srv/gitlab-runner/config:/etc/gitlab-runner \
 -v /var/run/docker.sock:/var/run/docker.sock \
 gitlab/gitlab-runner:latest
+
 ```
+
 [One-line registration command](https://docs.gitlab.com/runner/register/#one-line-registration-command):
-```
+
+```sh
 $ sudo gitlab-runner register \
   --non-interactive \
   --url "https://gitlab.com/" \
@@ -367,8 +387,10 @@ $ sudo gitlab-runner register \
   --locked="false" \
   --access-level="not_protected"
 ```
+
 and case when Runner is running in Docker-container:
-```
+
+```sh
 $ docker run --rm -v /srv/gitlab-runner/config:/etc/gitlab-runner gitlab/gitlab-runner register \
   --non-interactive \
   --executor "docker" \
@@ -412,24 +434,29 @@ Runner registered successfully. Feel free to start it, but if it's running alrea
 staging:
   stage: stage
   when: manual
-``` 
-- added version filter semver-tag as a deployment restriction on stage and production envs:
 ```
+
+- added version filter semver-tag as a deployment restriction on stage and production envs:
+
+```yml
 staging:
   stage: stage
     when: manual
     only:
       - /^\d+\.\d+\.\d+/
 ```
+
 in such case, only the commit marked with tag with version number will run the full pipline:
-```
+
+```sh
 git commit -a -m ‘#4 add logout button to profile page’
 git tag 2.4.10
 git push gitlab gitlab-ci-1 --tags
 ```
 
  - added job for creating the dynamic environment for any branch except the master:
-```
+
+```yml
 branch review:
   stage: review
   script: echo "Deploy to $CI_ENVIRONMENT_SLUG"
@@ -461,12 +488,15 @@ Within the hw#16 the following tasks were done:
  - Extra tasks with (*)
 
  Firewall rules for Prometheus and Puma:
-```
+
+```sh
 $ gcloud compute firewall-rules create prometheus-default --allow tcp:9090
 $ gcloud compute firewall-rules create puma-default --allow tcp:9292
 ```
+
 Create a Docker host in DCE:
-```
+
+```sh
 docker-machine create --driver google \
 --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
 --google-machine-type n1-standard-1 \
@@ -474,18 +504,22 @@ docker-machine create --driver google \
 --google-project docker-250311 \
 docker-host
 ```
+
 configure local env for prometheus, cd to monitoring and switch to docker-host:
 `eval $(docker-machine env docker-host)`
 
 Run Prometheus monitoring system in Docker container:
-```
+
+```sh
 $ docker run --rm -p 9090:9090 -d --name prometheus  prom/prometheus:v2.1.0
 $ docker-machine ip docker-host
 35.187.69.99
 $ docker stop prometheus
 ```
+
  - Repos structure: docker-monolith folder, .env, docker-compose.* was sreamlined for subsequent monitoring
-```
+
+```sh
  rename {src => docker}/.env.example (100%)
  rename {src => docker}/docker-compose.override.yml (100%)
  rename {src => docker}/docker-compose.yml (100%)
@@ -499,10 +533,12 @@ $ docker stop prometheus
 The entire configuration of Prometheus, unlike many other monitoring systems going through 
 configuration files and command line options.
 - assemble the Prometheus image :
+
+```sh
+export USER_NAME=username
+docker build -t $USER_NAME/prometheus .
 ```
-$ export USER_NAME=username
-$ docker build -t $USER_NAME/prometheus .
-```
+
 then build images for each microservice in their folders:
 `for i in ui post-py comment; do cd src/$i; bash docker_build.sh; cd -; done`
 All this images contain healthcheck inside that checks if the services are alive
@@ -637,3 +673,68 @@ Links to additional information:
   - [Makefile for your dockerfiles](https://philpep.org/blog/a-makefile-for-your-dockerfiles)
 
 _IMPORTANT NOTE:_ before running Makefile, it's necessary to rename Madefile to Makefile in microservices' folders src/ui|comment|post-py
+
+## Homework #17 (monitoring-2 branch)
+
+- Docker containers monitoring
+- Metrics visualization
+- Collecting application metrics and business metrics
+- Configuring and checking of alert service
+- Extra tasks with (*)
+
+Bring up the docker-host via gcloud and docker-machine:
+
+```
+docker-machine create --driver google \
+--google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
+--google-machine-type n1-standard-1 \
+--google-zone europe-west1-b \
+--google-project docker-250311 \
+docker-host
+```
+
+Get the Docker Engine parameters to connect Docker Client to Engine:
+
+```
+docker-machine env docker-host
+export DOCKER_TLS_VERIFY="1"
+export DOCKER_HOST="tcp://35.195.24.226:2376"
+export DOCKER_CERT_PATH="/home/ivbor/.docker/machine/machines/docker-host"
+export DOCKER_MACHINE_NAME="docker-host"
+# Run this command to configure your shell: 
+# eval $(docker-machine env docker-host)
+```
+
+switch to docker-host:
+
+```sh
+$ eval $(docker-machine env docker-host)
+$ docker-machine ip docker-host
+35.195.24.226
+```
+
+To monitor a state of docker containers we'll use [cAdvisor](https://github.com/google/cadvisor) 
+cAdvisor collect the following information from containers:
+ - the % of CPU, RAM using
+ - network traffic etc.
+
+Split the microservices and monitoring configurations on separate compose files and check it then:
+
+```sh
+docker-compose -f docker-compose.yml config
+docker-compose -f docker-compose-monitoring.yml config
+```
+
+add firewall rule for cAdvisor service:
+`gcloud compute firewall-rules create cadvisor-default --allow tcp:8080`
+
+Add grafana monitoring service in docker-compose-monitoring.yml and don't forget add firewall rule for grafana:
+`gcloud compute firewall-rules create grafana-default --allow tcp:3000`
+
+Without stopping the container, run a separate container with grafana service:
+`docker-compose -f docker-compose-monitoring.yml up -d grafana`
+
+```sh
+$ docker run --rm -p 9090:9090 -d --name prometheus  prom/prometheus:v2.1.0
+$ docker-machine ip docker-host
+$ docker-machine rm docker-host

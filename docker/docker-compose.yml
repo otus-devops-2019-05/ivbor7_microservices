@@ -1,57 +1,6 @@
 version: '3.5'
 services:
 
-  node-exporter:
-    hostname: node-exporter
-    container_name: node-exporter
-    image: prom/node-exporter:v0.15.2
-    user: root
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
-    networks:
-      - ${NETW_FRONT}
-      - ${NETW_BACK}
-
-  mongodb-exporter:
-    hostname: mongodb-exporter
-    container_name: mongodb-exporter
-#    build: . 
-    image: ${USER_NAME}/mongodb-exporter:latest
-    command:
-      - '--mongodb.uri=mongodb://post_db:27017'
-#      - '--groups.enabled=asserts,durability,background_flusshing,connections,extra_info,global_lock,index_counters,network,op_counters,op_counters_repl,memory,locks,metrics'
-#      - '--collect.collection'
-#      - '--collect.database'
-    restart: always
-    ports:
-      - 9216:9216
-    networks:
-      - ${NETW_BACK}
-
-  blackbox-exporter:
-    hostname: blackbox-exporter
-    container_name: blackbox-exporter
-    image: prom/blackbox-exporter:latest
-    volumes:
-      - '../monitoring/exporters/blackbox-exporter:/config'
-    command:
-      - '--config.file=/etc/blackbox_exporter/config.yml'
-    ports:  
-      - '9115:9115'
-    networks:
-      backend_net:
-        aliases:
-          - blackbox_net
-      frontend_net:
-        aliases:
-          - blackbox_net
-
   post_db:
     hostname: post_db
     container_name: post_db
@@ -96,26 +45,8 @@ services:
       - ${NETW_FRONT}
       - ${NETW_BACK}
 
-  prometheus:
-    hostname: prometheus
-    container_name: prometheus
-    image: ${USER_NAME}/prometheus
-    ports:
-      - '9090:9090'
-    volumes:
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention=1d'
-    networks:
-      - ${NETW_FRONT}
-      - ${NETW_BACK}
-
-
 volumes:
   post_db:
-  prometheus_data:
 
 networks:
   frontend_net:
