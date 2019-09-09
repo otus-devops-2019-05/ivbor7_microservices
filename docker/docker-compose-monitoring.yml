@@ -18,21 +18,26 @@ services:
       - ${NETW_FRONT}
       - ${NETW_BACK}
 
-  mongodb-exporter:
-    hostname: mongodb-exporter
-    container_name: mongodb-exporter
+  mongodb_exporter:
+    hostname: mongodb_exporter
+    container_name: mongodb_exporter
 #    build: . 
-    image: ${USER_NAME}/mongodb-exporter:latest
+    image: ${USER_NAME}/mongodb_exporter
     command:
       - '--mongodb.uri=mongodb://post_db:27017'
-#      - '--groups.enabled=asserts,durability,background_flusshing,connections,extra_info,global_lock,index_counters,network,op_counters,op_counters_repl,memory,locks,metrics'
-#      - '--collect.collection'
+      - '--groups.enabled=asserts,durability,background_flusshing,connections,extra_info,global_lock,index_counters,network,op_counters,op_counters_repl,memory,locks,metrics'
+#     - '--collect.collection'
       - '--collect.database'
     restart: always
     ports:
       - 9216:9216
     networks:
       - ${NETW_BACK}
+
+#      backend_net:
+#        aliases:
+#          - prometheus_net
+#          - post_db
 
   blackbox-exporter:
     hostname: blackbox-exporter
@@ -55,7 +60,7 @@ services:
   prometheus:
     hostname: prometheus
     container_name: prometheus
-    image: ${USER_NAME}/prometheus
+    image: ${USER_NAME}/prometheus:latest
     ports:
       - '9090:9090'
     volumes:
@@ -117,7 +122,7 @@ networks:
     name: ${NETW_FRONT}
     driver: bridge
     ipam:
-      driver: bridge
+      driver: default
       config:
       - subnet: ${SUBNET_FRONT}
 
@@ -125,6 +130,6 @@ networks:
     name: ${NETW_BACK}
     driver: bridge
     ipam:
-      driver: bridge
+      driver: default
       config:
       - subnet: ${SUBNET_BACK}

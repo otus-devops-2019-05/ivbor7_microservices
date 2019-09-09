@@ -559,7 +559,7 @@ docker build -t ivbdockerhub/mongodb-exporter:1.0 .
 docker push $USER_NAME/mongodb-exporter
 ```
 
-The following options may be passed to the [mongodb:metrics](https://libraries.io/github/percona/mongodb_exporter) monitoring service as additional options:
+The following options may be passed to the [mongodb:metrics](https://libraries.io/github/percona/mongodb_exporter) monitoring service as additional options within the compose file:
 
 ```bash
 --mongodb.uri=mongodb://root:example@mongodb:27017 
@@ -733,6 +733,9 @@ Add grafana monitoring service in docker-compose-monitoring.yml and don't forget
 
 Without stopping the container, run a separate container with grafana service:
 `docker-compose -f docker-compose-monitoring.yml up -d grafana`
+
+rebuild mongodb_exporter:
+`cd ../monitoring/exporters/mongodb_exporter/ && docker build -t ivbdockerhub/mongodb-exporter:1.0 . && docker push $USER_NAME/mongodb-exporter:latest`
 
 ```sh
 $ docker run --rm -p 9090:9090 -d --name prometheus  prom/prometheus:v2.1.0
