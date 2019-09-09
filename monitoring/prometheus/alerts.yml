@@ -1,0 +1,11 @@
+groups:
+  - name: alert.rules
+    rules:
+    - alert: InstanceDown
+      expr: up == 0                    # any arbitrary alert message will be sent
+      for: 1m                          # during the period of time
+      labels:                          # additional labels
+        severity: page
+      annotations:
+        description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute'
+        summary: 'Instance {{ $labels.instance }} down'

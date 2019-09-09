@@ -34,11 +34,6 @@ services:
     networks:
       - ${NETW_BACK}
 
-#      backend_net:
-#        aliases:
-#          - prometheus_net
-#          - post_db
-
   blackbox-exporter:
     hostname: blackbox-exporter
     container_name: blackbox-exporter
@@ -56,6 +51,18 @@ services:
       frontend_net:
         aliases:
           - blackbox_net
+
+  alertmanager:
+    image: ${USER_NAME}/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+    ports:
+      - 9093:9093
+    networks:
+      backend_net:
+        aliases:
+          - prometheus_net
+
 
   prometheus:
     hostname: prometheus

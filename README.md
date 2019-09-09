@@ -737,6 +737,40 @@ Without stopping the container, run a separate container with grafana service:
 rebuild mongodb_exporter:
 `cd ../monitoring/exporters/mongodb_exporter/ && docker build -t ivbdockerhub/mongodb-exporter:1.0 . && docker push $USER_NAME/mongodb-exporter:latest`
 
+For alerting service we use Alertmanager provided by Prometheus. For this purpose the monitoring/alertmanager folder with appropriate config file (config.yml) and Dockerfile were created. To post messages from external sources into Slack channel configure an [Incoming Webhooks](https://devops-team-otus.slack.com/apps/A0F7XDUAZ-incoming-webhooks?page=1).
+Build docker image for Alertmanager: monitoring/alertmanager `$ docker build -t $USER_NAME/alertmanager .`
+and add this service to docker-compose-monitoring.yml in one network with Prometheus:
+
+```yml
+alertmanager:
+  image: ${USER_NAME}/alertmanager
+  command:
+    - '--config.file=/etc/alertmanager/config.yml'
+  ports:
+    - 9093:9093
+  networks:
+    backend_net:
+      aliases:
+        - prometheus_net
+```
+In monitoring/prometheus/alerts.yml we describe rules and conditions for alert triggering and sending a message to Alertmanager:
+
+```yml
+groups:
+  - name: alert.rules
+    rules:
+    - alert: InstanceDown
+      expr: up == 0
+      for: 1m
+      labels:
+        severity: page
+      annotations:
+        description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute'
+        summary: 'Instance {{ $labels.instance }} down'
+```
+All generated images were pushed to Docker regestry:
+`for i in ui post comment prometheus alertmanager; do docker push $USER_NAME/$i:latest; done`
+
 ```sh
 $ docker run --rm -p 9090:9090 -d --name prometheus  prom/prometheus:v2.1.0
 $ docker-machine ip docker-host
