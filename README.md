@@ -2,12 +2,13 @@
 ivbor7 microservices repository
 
 ## Table of Contents:
- - [HW#12 (docker-2): branch: TravisCI, Docker, Docker-compose](#homework-#12-(docker-2-branch))
- - [HW#13 (docker-3): branch: Microservices](#homework-#13-(docker-3-branch))
- - [HW#14 (docker-4): Docker network](#homework-#14-(docker-4-branch))
- - [HW#15 (docker-5) GitlabCI arrangement](#homework-#15-(gitlab-ci-1-branch))
- - [HW#16 (monitoring-1): Introduction to monitoring systems](#homework-#16-(monitoring-1-branch))
- - [HW#17 (monitoring-2): Application and Infrastructure monitoring](#homework-#17-(monitoring-2-branch))
+
+- [HW#12 (docker-2): branch: TravisCI, Docker, Docker-compose](#homework-#12-(docker-2-branch))
+- [HW#13 (docker-3): branch: Microservices](#homework-#13-(docker-3-branch))
+- [HW#14 (docker-4): Docker network](#homework-#14-(docker-4-branch))
+- [HW#15 (docker-5) GitlabCI arrangement](#homework-#15-(gitlab-ci-1-branch))
+- [HW#16 (monitoring-1): Introduction to monitoring systems](#homework-#16-(monitoring-1-branch))
+- [HW#17 (monitoring-2): Application and Infrastructure monitoring](#homework-#17-(monitoring-2-branch))
 
 ## Homework #12 (docker-2 branch)
 
@@ -34,6 +35,17 @@ docker login             # Log in this CLI session using your Docker credentials
 docker tag <image> username/repository:tag  # Tag <image> for upload to registry
 docker push username/repository:tag            # Upload tagged image to registry
 docker run username/repository:tag                   # Run image from a registry
+docker service create --replicas 1 --name my-prometheus \
+    --mount type=bind,source=/tmp/prometheus.yml,destination=/etc/prometheus/prometheus.yml \
+    --publish published=9090,target=9090,protocol=tcp \
+    prom/prometheus                       # add service with single replica
+
+docker service create \
+  --replicas 10 \
+  --name ping_service \
+  alpine ping docker.com                  # add service with 10 tasks that just ping docker.com non-stop 
+
+docker service remove ping_service        # stop and remove the ping_service service,
  ```
 
 **Image testing**
@@ -76,7 +88,8 @@ To generate this message, Docker took the following steps:
 - [x] create Docker-host on GCP with Docker installed:
 
 ```sh
-export GOOGLE_PROJECT=docker-250311
+#
+# export GOOGLE_PROJECT=docker-250311
 docker-machine create --driver google \
 --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
 --google-machine-type n1-standard-1 \
@@ -546,7 +559,7 @@ Running the docker-compose we've encountered an issue connected with network nam
 The network that docker-compose creates for us has a funky name. It takes the name of the current directory and then concatenates it with the service name, and then an index. This will break things.
 
 - [x] added node-exporter into docker container to collect info regarding Docker itself
-- [x] all created images were pushed to docker registry, available at this [link][https://cloud.docker.com/u/ivbdockerhub/repository/list]
+- [x] all created images were pushed to docker registry, available at this [link](https://cloud.docker.com/u/ivbdockerhub/repository/list)
 
 - [x] - extra task with (*): monitoring MongoDB using the exporter. 
 [Exporters and Integrations](https://prometheus.io/docs/instrumenting/exporters/). There are a lot of libraries and servers which help in exporting existing metrics from third-party systems as Prometheus metrics. As for [MongoDB Exporter](https://github.com/dcu/mongodb_exporter) it's not supported for now. So, I've used [Percona MongoDB exporter](https://github.com/percona/mongodb_exporter) Based on MongoDB exporter by David Cuadrado (@dcu), but forked for full sharded support and structure changes.
@@ -613,7 +626,7 @@ mongodb_up and mongodb_network_bytes_total metrics were analyzed during switchin
 
 - [x] extra task with (*): use Blackbox Exporter for services monitoring Prometheus [this example of code](https://kamaok.org.ua/?p=3090) might be useful.
 
-Configure docker-compose adding the blackbox service:
+Configure docker-compose by adding the blackbox service:
 
 ```yml
   blackbox-exporter:
@@ -682,9 +695,9 @@ _IMPORTANT NOTE:_ before running Makefile, it's necessary to rename Madefile to 
 - Configuring and checking of alert service
 - Extra tasks with (*)
 
-Bring up the docker-host via gcloud and docker-machine:
+Bring up the docker-host using gcloud and docker-machine:
 
-```
+```sh
 docker-machine create --driver google \
 --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
 --google-machine-type n1-standard-1 \
@@ -695,7 +708,7 @@ docker-host
 
 Get the Docker Engine parameters to connect Docker Client to Engine:
 
-```
+```sh
 docker-machine env docker-host
 export DOCKER_TLS_VERIFY="1"
 export DOCKER_HOST="tcp://35.195.24.226:2376"
@@ -734,8 +747,7 @@ Add grafana monitoring service in docker-compose-monitoring.yml and don't forget
 Without stopping the container, run a separate container with grafana service:
 `docker-compose -f docker-compose-monitoring.yml up -d grafana`
 
-rebuild mongodb_exporter:
-`cd ../monitoring/exporters/mongodb_exporter/ && docker build -t ivbdockerhub/mongodb-exporter:1.0 . && docker push $USER_NAME/mongodb-exporter:latest`
+As Gafana support work with Prometheus out of box, all we need to do after running container is click the "Add data source" button on Grafana WI and choose Prometheus.
 
 For alerting service we use Alertmanager provided by Prometheus. For this purpose the monitoring/alertmanager folder with appropriate config file (config.yml) and Dockerfile were created. To post messages from external sources into Slack channel configure an [Incoming Webhooks](https://devops-team-otus.slack.com/apps/A0F7XDUAZ-incoming-webhooks?page=1).
 Build docker image for Alertmanager: monitoring/alertmanager `$ docker build -t $USER_NAME/alertmanager .`
@@ -768,10 +780,97 @@ groups:
         description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute'
         summary: 'Instance {{ $labels.instance }} down'
 ```
-All generated images were pushed to Docker regestry:
+
+Inform Prometheus regarding the Alertmanager's location and alerting conditions by adding two sections in prometheus.yml:
+
+```yml
+rule_files:
+  - "alerts.yml"
+
+alerting:
+  alertmanagers:
+  - scheme: http
+    static_configs:
+    - targets:
+      - "alertmanager:9093"
+```
+
+Config.yml file will be inserted into Alertmanager container via Dockerfile during image building. Alerting described in alert.yml will be added in Prometheus image via prometheus/Dockerfile:
+
+```yml
+FROM prom/prometheus:v2.1.0
+ADD prometheus.yml /etc/prometheus/
+ADD alerts.yml /etc/prometheus/
+```
+
+All generated images were pushed to the [Docker regestry](https://cloud.docker.com/u/ivbdockerhub/repository/list):
 `for i in ui post comment prometheus alertmanager; do docker push $USER_NAME/$i:latest; done`
 
+
+### Extra tasks:
+
+- [x] - Update Makefile. Add working with images for monitoring services 
+- [x] - Add experimental feature that allows the [Docker metrics to be exported](https://docs.docker.com/config/thirdparty/prometheus/) using the Prometheus syntax. You can try to integrate the docker metrics locally on Docker-machine or with help [Katatcoda browser based hands on lab](https://www.katacoda.com/courses/prometheus/docker-metrics). In case of GCP, once running the instance with docker onboard, connect to the docker host via ssh `docker-machine ssh docker-host` and take the following steps:
+
+ 1. The command below will update the systemd configuration used to start Docker to set the flags when the daemon starts and then restarts Docker.
+
 ```sh
-$ docker run --rm -p 9090:9090 -d --name prometheus  prom/prometheus:v2.1.0
-$ docker-machine ip docker-host
-$ docker-machine rm docker-host
+echo '{ "metrics-addr" : "0.0.0.1:9323", "experimental" : true }' > /etc/docker/daemon.json
+systemctl restart docker
+```
+add firewall rule: `gcloud compute firewall-rules create docker-metrics-default --allow tcp:9323`
+checking: `curl <ip-docker-host>|localhost:9323/metrics`
+
+ 2. Defines in prometheus.yml the intervals, the servers and ports that Prometheus should scrape data from:
+
+```yml
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'docker-host'
+
+    static_configs:
+      - targets: ['<ip-docker-host>:9323', '127.0.0.1:9090', '127.0.0.1:9100', '127.0.0.1:9323']
+        labels:
+          group: 'docker-host'
+```
+
+More information on the default ports can be found [at:](https://github.com/prometheus/prometheus/wiki/Default-port-allocations) 
+
+docker run -d --net=host \
+    -v /root/prometheus.yml:/etc/prometheus/prometheus.yml \
+    --name prometheus-server \
+    prom/prometheus
+
+ 3. Launch the Node Exporter container. By mounting the host /proc and /sys directory, the container has accessed to the necessary information to report on.
+
+```sh
+docker run -d \
+  -v "/proc:/host/proc" \
+  -v "/sys:/host/sys" \
+  -v "/:/rootfs" \
+  --net="host" \
+  --name=prometheus \
+  quay.io/prometheus/node-exporter:v0.13.0 \
+    -collector.procfs /host/proc \
+    -collector.sysfs /host/sys \
+    -collector.filesystem.ignored-mount-points "^/(sys|proc|dev|host|etc)($|/)"
+```
+
+Running additional containers will result in changes to the metrics produced, which are viewable via the graphs and queries.
+`docker run -d katacoda/docker-http-server:latest`
+
+So, cAdvisor collects, aggregates, processes, and exports information about running containers. While Docker daemon by itself can be monitored with help of Docker metrics. In turn, it's number in comparison with cAdvisor is not so diverse and numerous.
+For visualization of collected docker host's metrics in Grafana the [daemon-metrics.json - dashboard](https://github.com/cirocosta/sample-collect-docker-metrics) was used.
+
+ 
+
+Configure email-notification about alert events
+
+```sh
+docker run --rm -p 9090:9090 -d --name prometheus  prom/prometheus:v2.1.0
+docker-machine ip docker-host
+docker-machine rm docker-host
+```

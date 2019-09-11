@@ -15,19 +15,21 @@ VER = latest
 
 REDDIT_SERVICES = ui comment post-py
 REDDIT_IMAGES = img_ui img_comment img_post-py
-MON_SERVICES = prometheus mongodb_exporter blackbox_exporter
+MON_SERVICES = prometheus mongodb_exporter blackbox_exporter cadvisor alertmanager grafana telegraf trickster
 #MON_SERVICES = $(shell for i in $$MON_SUBDIRS ; do basename $$i ; done)
-MON_IMAGES = img_prometheus img_mongodb_exporter img_blackbox_exporter
+MON_IMAGES = img_prometheus img_mongodb_exporter img_blackbox_exporter img_alertmanager img_grafana img_telegraf img_trickster
 
 # mapping to the monitoring services
 MON_prometheus_DIR = monitoring/prometheus
 MON_mongodb_exporter_DIR = monitoring/exporters/mongodb_exporter
 MON_blackbox_exporter_DIR = monitoring/exporters/blackbox_exporter
+MON_alertmanager_DIR = monitoring/alertmanager
+MON_grafana_DIR = monitoring/grafana
+MON_telegraf_DIR = monitoring/telegraf
+MON_trickster_DIR = monitoring/trickster
 
-#DOCKER_IMAGE_TAG        ?= $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
-#DOCKERFILE_PATH         ?= ./Dockerfile
-
-# HELP 
+#--------------------------------------------------------------------------
+# HELP :
 .PHONY: help
 help: ## This help.
 	@echo 'Never run this Makefile for your own safety!!!'
@@ -45,7 +47,7 @@ debug: ## Display current var's values
 	@echo "$$(date +"%Y-%m-%d %H:%M:%S") DOCKERFILES: $(DOCKERFILES)" >> /tmp/make_info.log
 	@echo "$$(date +"%Y-%m-%d %H:%M:%S") Docker's Dirs: $(DOCKERSDIRS)" >>/tmp/make_info.log 
 	@echo "$$(date +"%Y-%m-%d %H:%M:%S") MonServices: $(MON_SERVICES)" >> /tmp/make_info.log
-	@echo "=============================================================" >> /tmp/make_info.log
+	@echo "=================================================================================" >> /tmp/make_info.log
 
 # microservices: post comment ui
 # Docker build reddit's microservice images using recursive Make:
