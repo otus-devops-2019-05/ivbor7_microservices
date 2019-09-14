@@ -53,8 +53,8 @@ services:
           - blackbox_net
 
   alertmanager:
-#    hostname: alertmanager
-#    container_name: alertmanager
+    hostname: alertmanager
+    container_name: alertmanager
     image: ${USER_NAME}/alertmanager
     command:
       - '--config.file=/etc/alertmanager/config.yml'
@@ -111,8 +111,6 @@ services:
     image: ${USER_NAME}/telegraf
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock'
-#    ports:
-#      - '9273:9273'
     networks:
       backend_net:
         aliases:
