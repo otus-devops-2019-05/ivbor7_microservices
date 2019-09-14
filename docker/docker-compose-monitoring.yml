@@ -53,6 +53,8 @@ services:
           - blackbox_net
 
   alertmanager:
+    hostname: alertmanager
+    container_name: alertmanager
     image: ${USER_NAME}/alertmanager
     command:
       - '--config.file=/etc/alertmanager/config.yml'
@@ -85,6 +87,8 @@ services:
           - prometheus_net
 
   cadvisor:
+    hostname: cadvisor
+    container_name: cadvisor
     image: google/cadvisor:v0.29.0
     volumes:
       - '/:/rootfs:ro'
@@ -97,6 +101,19 @@ services:
       frontend_net:
         aliases:
           - prometheus_net
+      backend_net:
+        aliases:
+          - prometheus_net
+
+  telegraf:
+    hostname: telegraf
+    container_name: telegraf
+    image: ${USER_NAME}/telegraf
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock'
+#    ports:
+#      - '9273:9273'
+    networks:
       backend_net:
         aliases:
           - prometheus_net
