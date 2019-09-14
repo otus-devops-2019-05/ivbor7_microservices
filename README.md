@@ -35,6 +35,7 @@ docker login             # Log in this CLI session using your Docker credentials
 docker tag <image> username/repository:tag  # Tag <image> for upload to registry
 docker push username/repository:tag            # Upload tagged image to registry
 docker run username/repository:tag                   # Run image from a registry
+docker images -f dangling=true -q | xargs docker rmi  # deletes images with no label and no running container
 docker service create --replicas 1 --name my-prometheus \
     --mount type=bind,source=/tmp/prometheus.yml,destination=/etc/prometheus/prometheus.yml \
     --publish published=9090,target=9090,protocol=tcp \
@@ -750,6 +751,7 @@ Without stopping the container, run a separate container with grafana service:
 As Gafana support work with Prometheus out of box, all we need to do after running container is click the "Add data source" button on Grafana WI and choose Prometheus.
 
 For alerting service we use Alertmanager provided by Prometheus. For this purpose the monitoring/alertmanager folder with appropriate config file (config.yml) and Dockerfile were created. To post messages from external sources into Slack channel configure an [Incoming Webhooks](https://devops-team-otus.slack.com/apps/A0F7XDUAZ-incoming-webhooks?page=1).
+Slack Integration checking: `curl -X POST --data-urlencode "payload={\"channel\": \"#ivan_boriskin\", \"username\": \"webhookbot\", \"text\": \"This is posted to #ivan_boriskin and comes from a bot named webhookbot.\", \"icon_emoji\": \":ghost:\"}" https://hooks.slack.com/services/<slack_token>` 
 Build docker image for Alertmanager: monitoring/alertmanager `$ docker build -t $USER_NAME/alertmanager .`
 and add this service to docker-compose-monitoring.yml in one network with Prometheus:
 
@@ -809,15 +811,22 @@ All generated images were pushed to the [Docker regestry](https://cloud.docker.c
 
 ### Extra tasks:
 
+#### with (*):
 - [x] - Update Makefile. Add working with images for monitoring services 
-- [x] - Add experimental feature that allows the [Docker metrics to be exported](https://docs.docker.com/config/thirdparty/prometheus/) using the Prometheus syntax. You can try to integrate the docker metrics locally on Docker-machine or with help [Katatcoda browser based hands on lab](https://www.katacoda.com/courses/prometheus/docker-metrics). In case of GCP, once running the instance with docker onboard, connect to the docker host via ssh `docker-machine ssh docker-host` and take the following steps:
+- [x] - Add experimental feature that allows the [Docker metrics to be exported](https://docs.docker.com/config/thirdparty/prometheus/) using the Prometheus syntax. See an example [how to collect Docker daemon metrics](https://ops.tips/gists/how-to-collect-docker-daemon-metrics/) You can try to integrate the docker metrics locally on Docker-machine or with help [Katatcoda browser based hands on lab](https://www.katacoda.com/courses/prometheus/docker-metrics). In case of GCP, once running the instance with docker onboard, connect to the docker host via ssh `docker-machine ssh docker-host` and take the following steps:
 
  1. The command below will update the systemd configuration used to start Docker to set the flags when the daemon starts and then restarts Docker.
 
 ```sh
-echo '{ "metrics-addr" : "0.0.0.1:9323", "experimental" : true }' > /etc/docker/daemon.json
-systemctl restart docker
+sudo echo -e '{\n  "metrics-addr" : "0.0.0.0:9323",\n  "experimental" : true\n}' | sudo tee /etc/docker/daemon.json && sudo systemctl restart docker
 ```
+
+or one-line command:
+
+```sh
+docker-machine ssh docker-host sudo echo -e '{\\n  \"metrics-addr\" : \"0.0.0.0:9323\",\\n  \"experimental\" : true\\n}' | sudo tee /etc/docker/daemon.json && sudo systemctl restart docker
+```
+
 add firewall rule: `gcloud compute firewall-rules create docker-metrics-default --allow tcp:9323`
 checking: `curl <ip-docker-host>|localhost:9323/metrics`
 
@@ -832,12 +841,13 @@ scrape_configs:
   - job_name: 'docker-host'
 
     static_configs:
-      - targets: ['<ip-docker-host>:9323', '127.0.0.1:9090', '127.0.0.1:9100', '127.0.0.1:9323']
+      - targets: ['<ip-docker-host>:9323']
+      # or locally ['127.0.0.1:9090', '127.0.0.1:9100', '127.0.0.1:9323']
         labels:
           group: 'docker-host'
 ```
 
-More information on the default ports can be found [at:](https://github.com/prometheus/prometheus/wiki/Default-port-allocations) 
+More information on the default ports can be found [here](https://github.com/prometheus/prometheus/wiki/Default-port-allocations) 
 
 docker run -d --net=host \
     -v /root/prometheus.yml:/etc/prometheus/prometheus.yml \
@@ -862,15 +872,58 @@ docker run -d \
 Running additional containers will result in changes to the metrics produced, which are viewable via the graphs and queries.
 `docker run -d katacoda/docker-http-server:latest`
 
-So, cAdvisor collects, aggregates, processes, and exports information about running containers. While Docker daemon by itself can be monitored with help of Docker metrics. In turn, it's number in comparison with cAdvisor is not so diverse and numerous.
-For visualization of collected docker host's metrics in Grafana the [daemon-metrics.json - dashboard](https://github.com/cirocosta/sample-collect-docker-metrics) was used.
+So, cAdvisor collects, aggregates, processes and exports information about running containers. While Docker daemon by itself can be monitored with help of Docker metrics. In turn, it's number in comparison with cAdvisor is not so diverse and numerous.
+To visualise the collected docker-host metrics Grafana with [daemon-metrics.json - dashboard](https://github.com/cirocosta/sample-collect-docker-metrics) was used.
 
- 
+- [x] - Use InfluxDB Telegraf to collect metrics from docker daemon.
+ 1. [Configure Telegraf](https://docs.influxdata.com/telegraf/v1.7/administration/configuration/) using the following instructions [Input plugin](https://docs.influxdata.com/telegraf/v1.7/plugins/inputs/) and [Output plugin](https://docs.influxdata.com/telegraf/v1.7/plugins/outputs/) 
+ As telegraf will collect metrics from [Docker daemon](https://docs.docker.com/engine/api/v1.20/) we need the input plugin configured, and to expose all this one to be polled by Prometheus - need to be configured the output plugin. See the examples of configuring the [Input plugin for Docker daemon](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/docker) and [Output plugin for Prometheus](https://github.com/influxdata/telegraf/tree/master/plugins/outputs/prometheus_client)
+Thus the telegraf.conf is as follows:
 
-Configure email-notification about alert events
+```cnf
+[[inputs.docker]]
+  ## Docker Endpoint
+  ##   To use TCP, set endpoint = "tcp://[ip]:[port]"
+  ##   To use environment variables (ie, docker-machine), set endpoint = "ENV"
+  endpoint = "unix:///var/run/docker.sock"
 
-```sh
-docker run --rm -p 9090:9090 -d --name prometheus  prom/prometheus:v2.1.0
-docker-machine ip docker-host
-docker-machine rm docker-host
+
+[[outputs.prometheus_client]]
+  ## Address to listen on.
+  listen = ":9273"
+
+## If set, the IP Ranges which are allowed to access metrics.
+  ##   ex: ip_range = ["192.168.0.0/24", "192.168.1.0/30"]
+  ip_range = ["10.0.1.0./24","10.0.2.0/24"]
+
+ ## Path to publish the metrics on.
+  path = "/metrics"
+
 ```
+
+also add telegraf job to prometheus.yml:
+
+```yml
+  - job_name: 'telegraf'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['telegraf:9273']
+```
+
+Then add telegraf container to the docker-compose-monitoring.yml:
+
+```cnf
+  telegraf:
+    image: ${USER_NAME}/telegraf
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock'
+    networks:
+      backend_net:
+        aliases:
+          - prometheus_net
+```
+ - [x] configure the Alertmanager integration with email notification along with notifications to slack.
+For training we can use free temporary smtp service [Temp Mail](https://rapidapi.com/Privatix/api/temp-mail) also known as: tempmail, 10minutemail, throwaway email, fake-mail or trash-mail(can be filtered by antyspam). Or get free account on [Mailjet](https://www.mailjet.com/pricing/) or at [Mailtrap](https://mailtrap.io/)
+
+
+Configure email-notification about alert events [Sending alert notifications to multiple destinations](https://www.robustperception.io/sending-alert-notifications-to-multiple-destinations)

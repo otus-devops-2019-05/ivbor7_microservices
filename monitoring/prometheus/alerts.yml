@@ -1,11 +1,42 @@
 groups:
   - name: alert.rules
     rules:
-    - alert: InstanceDown
+    - alert: InstanceDown 
       expr: up == 0                    # any arbitrary alert message will be sent
       for: 1m                          # during the period of time
       labels:                          # additional labels
-        severity: page
+        severity: critical
       annotations:
         description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute'
-        summary: 'Instance {{ $labels.instance }} down'
+        summary: 'Instance {{ $labels.instance }} of job {{ $labels.job }} down'
+
+  - name: FDLimits
+    rules:
+    - alert: ProcessNearFDLimits
+      expr: process_open_fds / process_max_fds > 0.8    # for checking replace process_open_fds with 1040000  
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        description: 'On {{ $labels.instance }} of job {{ $labels.job }} is reaching the open file limit'
+        summary: 'On Instance {{ $labels.instance }} too many files are opened'
+
+  - name: ResponseTimeLatency
+    rules:
+    - alert: Response time exceeded 0.2 threshold 
+      expr: histogram_quantile(0.95, sum(rate(ui_request_response_time_bucket[1m])) by (le)) > 0.2
+      for: 15s                         
+      labels:                          
+        severity: warning
+      annotations:
+        description: 'On {{ $labels.instance }} of job {{ $labels.job }} the high latency of response '
+        summary: 'The high latency of responce on Instance {{ $labels.instance }} '
+
+    - alert: Response time close to response timeout
+      expr: histogram_quantile(0.95, sum(rate(ui_request_response_time_bucket[1m])) by (le)) > 0.1
+      for: 5s                         
+      labels:                          
+        severity: critical
+      annotations:
+        description: '{{ $labels.instance }} of job {{ $labels.job }} is close to service response  timeout '
+        summary: 'On {{ $labels.instance }} instance the {{ $labels.job }} is close to service response timeout\n description:{{ .CommonAnnotations.description }}'

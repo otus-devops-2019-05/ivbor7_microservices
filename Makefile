@@ -25,7 +25,7 @@ MON_mongodb_exporter_DIR = monitoring/exporters/mongodb_exporter
 MON_blackbox_exporter_DIR = monitoring/exporters/blackbox_exporter
 MON_alertmanager_DIR = monitoring/alertmanager
 MON_grafana_DIR = monitoring/grafana
-MON_telegraf_DIR = monitoring/telegraf
+MON_telegraf_DIR = monitoring/exporter/telegraf
 MON_trickster_DIR = monitoring/trickster
 
 #--------------------------------------------------------------------------
