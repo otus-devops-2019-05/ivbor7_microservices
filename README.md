@@ -793,8 +793,8 @@ alerting:
   alertmanagers:
   - scheme: http
     static_configs:
-    - targets:
-      - "alertmanager:9093"
+      - targets:
+        - "alertmanager:9093"
 ```
 
 Config.yml file will be inserted into Alertmanager container via Dockerfile during image building. Alerting described in alert.yml will be added in Prometheus image via prometheus/Dockerfile:
