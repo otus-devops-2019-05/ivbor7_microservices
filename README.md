@@ -923,7 +923,36 @@ Then add telegraf container to the docker-compose-monitoring.yml:
           - prometheus_net
 ```
  - [x] configure the Alertmanager integration with email notification along with notifications to slack.
-For training we can use free temporary smtp service [Temp Mail](https://rapidapi.com/Privatix/api/temp-mail) also known as: tempmail, 10minutemail, throwaway email, fake-mail or trash-mail(can be filtered by antyspam). Or get free account on [Mailjet](https://www.mailjet.com/pricing/) or at [Mailtrap](https://mailtrap.io/)
+For training we can use free temporary smtp service [Temp Mail](https://rapidapi.com/Privatix/api/temp-mail) also known as: tempmail, 10minutemail, throwaway email, fake-mail or trash-mail(can be filtered by antyspam). Or get free account at [Mailjet](https://www.mailjet.com/pricing/) or at [Mailtrap](https://mailtrap.io/)
 
+Added two parameters to alerts.yml with different alert level "warning" send to mail and "critical" will be sent to slack and mail:
 
-Configure email-notification about alert events [Sending alert notifications to multiple destinations](https://www.robustperception.io/sending-alert-notifications-to-multiple-destinations)
+```yml
+  - name: FDLimits
+    rules:
+    - alert: ProcessNearFDLimits
+      expr: process_open_fds / process_max_fds > 0.8    # for checking replace process_open_fds with 1040000
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        description: 'On {{ $labels.instance }} of job {{ $labels.job }} is reaching the open file limit'
+        summary: 'On Instance {{ $labels.instance }} too many files are opened'
+  
+  - name: ResponseTimeLatency
+    rules:
+    - alert: Response time exceeded 0.2 threshold
+      expr: histogram_quantile(0.95, sum(rate(ui_request_response_time_bucket[1m])) by (le)) > 0.2
+      for: 15s
+      labels:
+        severity: warning
+      annotations:
+        description: 'On {{ $labels.instance }} of job {{ $labels.job }} the high latency of response '
+        summary: 'The high latency of responce on Instance {{ $labels.instance }} '
+```
+The appropriate settings made in Alertmanager's config.yml to react on alerts, outlined above.
+
+Several related links: 
+ - [Sending alert notifications to multiple destinations](https://www.robustperception.io/sending-alert-notifications-to-multiple-destinations)
+ 
+ - [Setting up Prometheus alerts](https://0x63.me/setting-up-prometheus-alerts/)
