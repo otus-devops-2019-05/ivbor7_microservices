@@ -1,33 +1,33 @@
 global:
   slack_api_url: 'https://hooks.slack.com/services/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'
-#  smtp_from: 'achtung@example.com'
+  smtp_from: 'achtung@example.com'
 #  smtp_smarthost: 'in-v3.mailjet.com:587'
 #  smtp_auth_username: '57ac459b2ed3329cf4cc2a37135452d9'
 #  smtp_auth_password: '60dfc0f5d5afe6ab4939665778282bef'
 #  smtp_require_tls: false
 
-#  smtp_smarthost: 'smtp.mailtrap.io:2525'
-#  smtp_auth_username: '7123d856237357'
-#  smtp_auth_password: '99db880583fa77'
+  smtp_smarthost: 'smtp.mailtrap.io:2525'
+  smtp_auth_username: '7123d856237357'
+  smtp_auth_password: '99db880583fa77'
 
 
 route:
 # A default receiver:
   receiver: slack-notifications
 
-#routes:
-#- match:
-#    severity: critical
-#  continue: true
-#  receiver: slack-notifications
+routes:
+- match:
+    severity: critical
+  continue: true
+  receiver: slack-notifications
 
-#- match:
-#    severity: critical
-#  receiver: mail-notifications  
+- match:
+    severity: critical
+  receiver: mail-notifications  
 
-#- match:
-#    severity: warning
-#  receiver: mail-notifications
+- match:
+    severity: warning
+  receiver: mail-notifications
 
 receivers:
 - name: slack-notifications
@@ -35,7 +35,7 @@ receivers:
   - channel: '#ivan_boriskin'
   send_resolved: true
 
-#- name: mail-notifications
-#  email_configs:
-#  - to: ivboriskin@gmail.com
-#  send_resolved: true
+- name: mail-notifications
+  email_configs:
+  - to: ivboriskin@gmail.com
+  send_resolved: true
