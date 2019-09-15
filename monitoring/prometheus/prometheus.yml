@@ -6,9 +6,11 @@ global:
 rule_files:
   - "alerts.yml"
 
+
 alerting:
   alertmanagers:
-  - static_configs:
+  - scheme: http
+    static_configs:
     - targets:
       - "alertmanager:9093"
 
@@ -20,7 +22,7 @@ scrape_configs:
 
   - job_name: 'docker-host'
     static_configs:
-      - targets: ['35.189.219.123:9323']
+      - targets: ['104.155.30.194:9323']
         labels:
           group: 'docker-host'
 

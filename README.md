@@ -750,7 +750,7 @@ Without stopping the container, run a separate container with grafana service:
 
 As Gafana support work with Prometheus out of box, all we need to do after running container is click the "Add data source" button on Grafana WI and choose Prometheus.
 
-For alerting service we use Alertmanager provided by Prometheus. For this purpose the monitoring/alertmanager folder with appropriate config file (config.yml) and Dockerfile were created. To post messages from external sources into Slack channel configure an [Incoming Webhooks](https://devops-team-otus.slack.com/apps/A0F7XDUAZ-incoming-webhooks?page=1).
+For alerting service we use [Alertmanager integration with Prometheus](https://medium.com/@abhishekbhardwaj510/alertmanager-integration-in-prometheus-197e03bfabdf) provided by Prometheus. For this purpose the monitoring/alertmanager folder with appropriate config file (config.yml) and Dockerfile were created. To post messages from external sources into Slack channel configure an [Incoming Webhooks](https://devops-team-otus.slack.com/apps/A0F7XDUAZ-incoming-webhooks?page=1).
 Slack Integration checking: `curl -X POST --data-urlencode "payload={\"channel\": \"#ivan_boriskin\", \"username\": \"webhookbot\", \"text\": \"This is posted to #ivan_boriskin and comes from a bot named webhookbot.\", \"icon_emoji\": \":ghost:\"}" https://hooks.slack.com/services/<slack_token>` 
 Build docker image for Alertmanager: monitoring/alertmanager `$ docker build -t $USER_NAME/alertmanager .`
 and add this service to docker-compose-monitoring.yml in one network with Prometheus:
@@ -824,7 +824,7 @@ sudo echo -e '{\n  "metrics-addr" : "0.0.0.0:9323",\n  "experimental" : true\n}'
 or one-line command:
 
 ```sh
-docker-machine ssh docker-host sudo echo -e '{\\n  \"metrics-addr\" : \"0.0.0.0:9323\",\\n  \"experimental\" : true\\n}' | sudo tee /etc/docker/daemon.json && sudo systemctl restart docker
+docker-machine ssh docker-host "sudo echo -e '{\\n  \"metrics-addr\" : \"0.0.0.0:9323\",\\n  \"experimental\" : true\\n}' | sudo tee /etc/docker/daemon.json && sudo systemctl restart docker"
 ```
 
 add firewall rule: `gcloud compute firewall-rules create docker-metrics-default --allow tcp:9323`
