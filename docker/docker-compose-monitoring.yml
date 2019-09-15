@@ -61,6 +61,9 @@ services:
     ports:
       - '9093:9093'
     networks:
+      frontend_net:
+        aliases:
+          - prometheus_net
       backend_net:
         aliases:
           - prometheus_net
