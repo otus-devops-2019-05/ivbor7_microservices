@@ -15,19 +15,19 @@ route:
 # A default receiver:
   receiver: slack-notifications
 
-#routes:
-#- match:
-#    severity: critical
-#  continue: true
-#  receiver: slack-notifications
+  routes:
+    - match:
+        severity: critical
+        continue: true
+        receiver: slack-notifications
 
-#- match:
-#    severity: critical
-#  receiver: mail-notifications  
+    - match:
+        severity: critical
+        receiver: mail-notifications  
 
-#- match:
-#    severity: warning
-#  receiver: mail-notifications
+    - match:
+        severity: warning
+        receiver: mail-notifications
 
 receivers:
 - name: slack-notifications
