@@ -64,7 +64,6 @@ scrape_configs:
         - 'localhost:9090'
 
   - job_name: 'telegraf'
-    scrape_interval: 5s
     static_configs:
       - targets: 
         - 'telegraf:9273'
