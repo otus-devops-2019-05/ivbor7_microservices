@@ -1,6 +1,15 @@
 # ivbor7_microservices
 ivbor7 microservices repository
 
+## Table of Contents:
+
+- [HW#12 (docker-2): branch: TravisCI, Docker, Docker-compose](#homework-#12-(docker-2-branch))
+- [HW#13 (docker-3): branch: Microservices](#homework-#13-(docker-3-branch))
+- [HW#14 (docker-4): Docker network](#homework-#14-(docker-4-branch))
+- [HW#15 (docker-5) GitlabCI arrangement](#homework-#15-(gitlab-ci-1-branch))
+- [HW#16 (monitoring-1): Introduction to monitoring systems](#homework-#16-(monitoring-1-branch))
+- [HW#17 (monitoring-2): Application and Infrastructure monitoring](#homework-#17-(monitoring-2-branch))
+
 ## Homework #12 (docker-2 branch)
 
 Within the hw#12 the following tasks were done:
@@ -26,6 +35,18 @@ docker login             # Log in this CLI session using your Docker credentials
 docker tag <image> username/repository:tag  # Tag <image> for upload to registry
 docker push username/repository:tag            # Upload tagged image to registry
 docker run username/repository:tag                   # Run image from a registry
+docker images -f dangling=true -q | xargs docker rmi  # deletes images with no label and no running container
+docker service create --replicas 1 --name my-prometheus \
+    --mount type=bind,source=/tmp/prometheus.yml,destination=/etc/prometheus/prometheus.yml \
+    --publish published=9090,target=9090,protocol=tcp \
+    prom/prometheus                       # add service with single replica
+
+docker service create \
+  --replicas 10 \
+  --name ping_service \
+  alpine ping docker.com                  # add service with 10 tasks that just ping docker.com non-stop 
+
+docker service remove ping_service        # stop and remove the ping_service service,
  ```
 
 **Image testing**
@@ -64,10 +85,12 @@ To generate this message, Docker took the following steps:
     to your terminal.
 ```
 
- - [x] new project "docker", ID=docker-250311 created on GCP
- - [x] create Docker-host on GCP with Docker installed:
-```
-export GOOGLE_PROJECT=docker-250311
+- [x] new project "docker", ID=docker-250311 created on GCP
+- [x] create Docker-host on GCP with Docker installed:
+
+```sh
+#
+# export GOOGLE_PROJECT=docker-250311
 docker-machine create --driver google \
 --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
 --google-machine-type n1-standard-1 \
@@ -83,22 +106,24 @@ $ docker-machine ls
 NAME          ACTIVE   DRIVER   STATE     URL                         SWARM   DOCKER     ERRORS
 docker-host   -        google   Running   tcp://104.155.51.208:2376           v19.03.1
 ```
-  - to switch to a remote host run command `$ eval $(docker-machine env docker-host)` after that all subsequent commands will be executed on remote GCP host via docker daemon.
-  - `eval $(docker-machine env --unset)` - use this command to switch to local docker
-  - `docker-machine rm <host-name>` - use this command to remove instance
 
- - [x] compare outputs of the comman1ds from lecture  
+- to switch to a remote host run command `$ eval $(docker-machine env docker-host)` after that all subsequent commands will be executed on remote GCP host via docker daemon.
+- `eval $(docker-machine env --unset)` - use this command to switch to local docker
+- `docker-machine rm <host-name>` - use this command to remove instance
+
+- [x] compare outputs of the comman1ds from lecture  
    `$ docker run --rm -ti tehbilly/htop`
-     - the only one running process (htop) with PID=1
+    - the only one running process (htop) with PID=1
  
    `$ docker run --rm --pid host -ti tehbilly/htop`
-     - we can see all processes running on host system including docker-daemon's worker processes in -namespace moby 
+    - we can see all processes running on host system including docker-daemon's worker processes in -namespace moby 
 
  - [x] create Dockerfile to build image with help Docker:
  `$ docker build -t reddit:latest .` 
  Attention: the dot "." at the end of command is mandatory. It points the path to Docker context(see the command output 1-st line: `Sending build context to Docker daemon   7.68kB`).
 Run the created container running the command: `docker run --name reddit -d --network=host reddit:latest` After running the container the service running on this host was not reachable due to the lack of appropriate firewall rule. To fix this issue add the firewall rule:
-```
+
+```sh
 $ gcloud compute firewall-rules create reddit-app \
 --allow tcp:9292 \
 --target-tags=docker-machine \
@@ -127,6 +152,7 @@ $ docker run --name reddit --rm -it <dockerhub-login>/otus-reddit:1.0 bash  <-- 
 
  - [ ] Extra task with (*) - create the prototype of infrastructure **in ToDo list** 
 
+[.#hw13]:
 
 ## Homework #13 (docker-3 branch)
 
@@ -217,6 +243,7 @@ Dockerfile.# - files contain optimized image description for docker and are loca
 ```
 other microservice images: post, comment and ui can be mounted in usual way.
 
+[#hw14]:
 ## Homework #14 (docker-4 branch)
 
 Within the hw#14 the following tasks were done:
@@ -277,11 +304,11 @@ docker run -d --network=reddit -p 9292:9292 ivb/ui:3.0
 Differences between "volumes" and "bind mount" approach is described [there](https://docs.docker.com/storage/volumes/) 
 The new <volumes> key mounts the project directory (microservices directory) on the host to /app inside the container, allowing us to modify the code on the fly, without having to rebuild the image.
 
-
 ## Homework #15 (gitlab-ci-1 branch)
 
  - create vm instance via gcloud compute command group:
-```
+
+```sh
 $ gcloud compute --project=docker-250311 instances create gitlab-ci \
 --zone=us-central1-a \
 --machine-type=n1-standard-1 \
@@ -325,16 +352,20 @@ to remove instance run the command:
 -----------------------------------
 `$ gcloud compute instances delete gitlab-ci # remove GCP instance`
 ```
+
 Then install Docker and docker-machine using ansible or manually.
 For manual installation use this commands set:
+
+```bash
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+add-apt-repository "deb https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+apt-get update
+apt-get install docker-ce docker-compose
 ```
-$ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-$ add-apt-repository "deb https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-$ apt-get update
-$ apt-get install docker-ce docker-compose
-```
+
 or use docker-machine:
-``` 
+
+```sh 
 docker-machine create --driver google \
 --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
 --google-machine-type n1-standard-1 \
@@ -352,9 +383,12 @@ Content for docker-compose file can be obtained from this [resource](https://doc
 -v /srv/gitlab-runner/config:/etc/gitlab-runner \
 -v /var/run/docker.sock:/var/run/docker.sock \
 gitlab/gitlab-runner:latest
+
 ```
+
 [One-line registration command](https://docs.gitlab.com/runner/register/#one-line-registration-command):
-```
+
+```sh
 $ sudo gitlab-runner register \
   --non-interactive \
   --url "https://gitlab.com/" \
@@ -367,8 +401,10 @@ $ sudo gitlab-runner register \
   --locked="false" \
   --access-level="not_protected"
 ```
+
 and case when Runner is running in Docker-container:
-```
+
+```sh
 $ docker run --rm -v /srv/gitlab-runner/config:/etc/gitlab-runner gitlab/gitlab-runner register \
   --non-interactive \
   --executor "docker" \
@@ -412,24 +448,29 @@ Runner registered successfully. Feel free to start it, but if it's running alrea
 staging:
   stage: stage
   when: manual
-``` 
-- added version filter semver-tag as a deployment restriction on stage and production envs:
 ```
+
+- added version filter semver-tag as a deployment restriction on stage and production envs:
+
+```yml
 staging:
   stage: stage
     when: manual
     only:
       - /^\d+\.\d+\.\d+/
 ```
+
 in such case, only the commit marked with tag with version number will run the full pipline:
-```
+
+```sh
 git commit -a -m ‘#4 add logout button to profile page’
 git tag 2.4.10
 git push gitlab gitlab-ci-1 --tags
 ```
 
  - added job for creating the dynamic environment for any branch except the master:
-```
+
+```yml
 branch review:
   stage: review
   script: echo "Deploy to $CI_ENVIRONMENT_SLUG"
@@ -461,12 +502,15 @@ Within the hw#16 the following tasks were done:
  - Extra tasks with (*)
 
  Firewall rules for Prometheus and Puma:
-```
+
+```sh
 $ gcloud compute firewall-rules create prometheus-default --allow tcp:9090
 $ gcloud compute firewall-rules create puma-default --allow tcp:9292
 ```
+
 Create a Docker host in DCE:
-```
+
+```sh
 docker-machine create --driver google \
 --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
 --google-machine-type n1-standard-1 \
@@ -474,18 +518,22 @@ docker-machine create --driver google \
 --google-project docker-250311 \
 docker-host
 ```
+
 configure local env for prometheus, cd to monitoring and switch to docker-host:
 `eval $(docker-machine env docker-host)`
 
 Run Prometheus monitoring system in Docker container:
-```
+
+```sh
 $ docker run --rm -p 9090:9090 -d --name prometheus  prom/prometheus:v2.1.0
 $ docker-machine ip docker-host
 35.187.69.99
 $ docker stop prometheus
 ```
+
  - Repos structure: docker-monolith folder, .env, docker-compose.* was sreamlined for subsequent monitoring
-```
+
+```sh
  rename {src => docker}/.env.example (100%)
  rename {src => docker}/docker-compose.override.yml (100%)
  rename {src => docker}/docker-compose.yml (100%)
@@ -499,10 +547,12 @@ $ docker stop prometheus
 The entire configuration of Prometheus, unlike many other monitoring systems going through 
 configuration files and command line options.
 - assemble the Prometheus image :
+
+```sh
+export USER_NAME=username
+docker build -t $USER_NAME/prometheus .
 ```
-$ export USER_NAME=username
-$ docker build -t $USER_NAME/prometheus .
-```
+
 then build images for each microservice in their folders:
 `for i in ui post-py comment; do cd src/$i; bash docker_build.sh; cd -; done`
 All this images contain healthcheck inside that checks if the services are alive
@@ -510,7 +560,7 @@ Running the docker-compose we've encountered an issue connected with network nam
 The network that docker-compose creates for us has a funky name. It takes the name of the current directory and then concatenates it with the service name, and then an index. This will break things.
 
 - [x] added node-exporter into docker container to collect info regarding Docker itself
-- [x] all created images were pushed to docker registry, available at this [link][https://cloud.docker.com/u/ivbdockerhub/repository/list]
+- [x] all created images were pushed to docker registry, available at this [link](https://cloud.docker.com/u/ivbdockerhub/repository/list)
 
 - [x] - extra task with (*): monitoring MongoDB using the exporter. 
 [Exporters and Integrations](https://prometheus.io/docs/instrumenting/exporters/). There are a lot of libraries and servers which help in exporting existing metrics from third-party systems as Prometheus metrics. As for [MongoDB Exporter](https://github.com/dcu/mongodb_exporter) it's not supported for now. So, I've used [Percona MongoDB exporter](https://github.com/percona/mongodb_exporter) Based on MongoDB exporter by David Cuadrado (@dcu), but forked for full sharded support and structure changes.
@@ -523,7 +573,7 @@ docker build -t ivbdockerhub/mongodb-exporter:1.0 .
 docker push $USER_NAME/mongodb-exporter
 ```
 
-The following options may be passed to the [mongodb:metrics](https://libraries.io/github/percona/mongodb_exporter) monitoring service as additional options:
+The following options may be passed to the [mongodb:metrics](https://libraries.io/github/percona/mongodb_exporter) monitoring service as additional options within the compose file:
 
 ```bash
 --mongodb.uri=mongodb://root:example@mongodb:27017 
@@ -577,7 +627,7 @@ mongodb_up and mongodb_network_bytes_total metrics were analyzed during switchin
 
 - [x] extra task with (*): use Blackbox Exporter for services monitoring Prometheus [this example of code](https://kamaok.org.ua/?p=3090) might be useful.
 
-Configure docker-compose adding the blackbox service:
+Configure docker-compose by adding the blackbox service:
 
 ```yml
   blackbox-exporter:
@@ -637,3 +687,272 @@ Links to additional information:
   - [Makefile for your dockerfiles](https://philpep.org/blog/a-makefile-for-your-dockerfiles)
 
 _IMPORTANT NOTE:_ before running Makefile, it's necessary to rename Madefile to Makefile in microservices' folders src/ui|comment|post-py
+
+## Homework #17 (monitoring-2 branch)
+
+- Docker containers monitoring
+- Metrics visualization
+- Collecting application metrics and business metrics
+- Configuring and checking of alert service
+- Extra tasks with (*)
+
+Bring up the docker-host using gcloud and docker-machine:
+
+```sh
+docker-machine create --driver google \
+--google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
+--google-machine-type n1-standard-1 \
+--google-zone europe-west1-b \
+--google-project docker-250311 \
+docker-host
+```
+
+Get the Docker Engine parameters to connect Docker Client to Engine:
+
+```sh
+docker-machine env docker-host
+export DOCKER_TLS_VERIFY="1"
+export DOCKER_HOST="tcp://35.195.24.226:2376"
+export DOCKER_CERT_PATH="/home/ivbor/.docker/machine/machines/docker-host"
+export DOCKER_MACHINE_NAME="docker-host"
+# Run this command to configure your shell: 
+# eval $(docker-machine env docker-host)
+```
+
+switch to docker-host:
+
+```sh
+$ eval $(docker-machine env docker-host)
+$ docker-machine ip docker-host
+35.195.24.226
+```
+
+To monitor a state of docker containers we'll use [cAdvisor](https://github.com/google/cadvisor) 
+cAdvisor collect the following information from containers:
+ - the % of CPU, RAM using
+ - network traffic etc.
+
+Split the microservices and monitoring configurations on separate compose files and check it then:
+
+```sh
+docker-compose -f docker-compose.yml config
+docker-compose -f docker-compose-monitoring.yml config
+```
+
+add firewall rule for cAdvisor service:
+`gcloud compute firewall-rules create cadvisor-default --allow tcp:8080`
+
+Add grafana monitoring service in docker-compose-monitoring.yml and don't forget add firewall rule for grafana:
+`gcloud compute firewall-rules create grafana-default --allow tcp:3000`
+
+Without stopping the container, run a separate container with grafana service:
+`docker-compose -f docker-compose-monitoring.yml up -d grafana`
+
+As Gafana support work with Prometheus out of box, all we need to do after running container is click the "Add data source" button on Grafana WI and choose Prometheus.
+
+For alerting service we use [Alertmanager integration with Prometheus](https://medium.com/@abhishekbhardwaj510/alertmanager-integration-in-prometheus-197e03bfabdf) provided by Prometheus. For this purpose the monitoring/alertmanager folder with appropriate config file (config.yml) and Dockerfile were created. To post messages from external sources into Slack channel configure an [Incoming Webhooks](https://devops-team-otus.slack.com/apps/A0F7XDUAZ-incoming-webhooks?page=1).
+Slack Integration checking: `curl -X POST --data-urlencode "payload={\"channel\": \"#ivan_boriskin\", \"username\": \"webhookbot\", \"text\": \"This is posted to #ivan_boriskin and comes from a bot named webhookbot.\", \"icon_emoji\": \":ghost:\"}" https://hooks.slack.com/services/<slack_token>` 
+Build docker image for Alertmanager: monitoring/alertmanager `$ docker build -t $USER_NAME/alertmanager .`
+and add this service to docker-compose-monitoring.yml in one network with Prometheus:
+
+```yml
+alertmanager:
+  image: ${USER_NAME}/alertmanager
+  command:
+    - '--config.file=/etc/alertmanager/config.yml'
+  ports:
+    - 9093:9093
+  networks:
+    backend_net:
+      aliases:
+        - prometheus_net
+```
+In monitoring/prometheus/alerts.yml we describe rules and conditions for alert triggering and sending a message to Alertmanager:
+
+```yml
+groups:
+  - name: alert.rules
+    rules:
+    - alert: InstanceDown
+      expr: up == 0
+      for: 1m
+      labels:
+        severity: page
+      annotations:
+        description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute'
+        summary: 'Instance {{ $labels.instance }} down'
+```
+
+Inform Prometheus regarding the Alertmanager's location and alerting conditions by adding two sections in prometheus.yml:
+
+```yml
+rule_files:
+  - "alerts.yml"
+
+alerting:
+  alertmanagers:
+  - scheme: http
+    static_configs:
+      - targets:
+        - "alertmanager:9093"
+```
+
+Config.yml file will be inserted into Alertmanager container via Dockerfile during image building. Alerting described in alert.yml will be added in Prometheus image via prometheus/Dockerfile:
+
+```yml
+FROM prom/prometheus:v2.1.0
+ADD prometheus.yml /etc/prometheus/
+ADD alerts.yml /etc/prometheus/
+```
+
+All generated images were pushed to the [Docker regestry](https://cloud.docker.com/u/ivbdockerhub/repository/list):
+`for i in ui post comment prometheus alertmanager; do docker push $USER_NAME/$i:latest; done`
+
+
+### Extra tasks:
+
+#### with (*):
+- [x] - Update Makefile. Add working with images for monitoring services 
+- [x] - Add experimental feature that allows the [Docker metrics to be exported](https://docs.docker.com/config/thirdparty/prometheus/) using the Prometheus syntax. See an example [how to collect Docker daemon metrics](https://ops.tips/gists/how-to-collect-docker-daemon-metrics/) You can try to integrate the docker metrics locally on Docker-machine or with help [Katatcoda browser based hands on lab](https://www.katacoda.com/courses/prometheus/docker-metrics). In case of GCP, once running the instance with docker onboard, connect to the docker host via ssh `docker-machine ssh docker-host` and take the following steps:
+
+ 1. The command below will update the systemd configuration used to start Docker to set the flags when the daemon starts and then restarts Docker.
+
+```sh
+sudo echo -e '{\n  "metrics-addr" : "0.0.0.0:9323",\n  "experimental" : true\n}' | sudo tee /etc/docker/daemon.json && sudo systemctl restart docker
+```
+
+or one-line command:
+
+```sh
+docker-machine ssh docker-host "sudo echo -e '{\\n  \"metrics-addr\" : \"0.0.0.0:9323\",\\n  \"experimental\" : true\\n}' | sudo tee /etc/docker/daemon.json && sudo systemctl restart docker"
+```
+
+add firewall rule: `gcloud compute firewall-rules create docker-metrics-default --allow tcp:9323`
+checking: `curl <ip-docker-host>|localhost:9323/metrics`
+
+ 2. Defines in prometheus.yml the intervals, the servers and ports that Prometheus should scrape data from:
+
+```yml
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'docker-host'
+
+    static_configs:
+      - targets: ['<ip-docker-host>:9323']
+      # or locally ['127.0.0.1:9090', '127.0.0.1:9100', '127.0.0.1:9323']
+        labels:
+          group: 'docker-host'
+```
+
+More information on the default ports can be found [here](https://github.com/prometheus/prometheus/wiki/Default-port-allocations) 
+
+docker run -d --net=host \
+    -v /root/prometheus.yml:/etc/prometheus/prometheus.yml \
+    --name prometheus-server \
+    prom/prometheus
+
+ 3. Launch the Node Exporter container. By mounting the host /proc and /sys directory, the container has accessed to the necessary information to report on.
+
+```sh
+docker run -d \
+  -v "/proc:/host/proc" \
+  -v "/sys:/host/sys" \
+  -v "/:/rootfs" \
+  --net="host" \
+  --name=prometheus \
+  quay.io/prometheus/node-exporter:v0.13.0 \
+    -collector.procfs /host/proc \
+    -collector.sysfs /host/sys \
+    -collector.filesystem.ignored-mount-points "^/(sys|proc|dev|host|etc)($|/)"
+```
+
+Running additional containers will result in changes to the metrics produced, which are viewable via the graphs and queries.
+`docker run -d katacoda/docker-http-server:latest`
+
+So, cAdvisor collects, aggregates, processes and exports information about running containers. While Docker daemon by itself can be monitored with help of Docker metrics. In turn, it's number in comparison with cAdvisor is not so diverse and numerous.
+To visualise the collected docker-host metrics Grafana with [daemon-metrics.json - dashboard](https://github.com/cirocosta/sample-collect-docker-metrics) was used.
+
+- [x] - Use InfluxDB Telegraf to collect metrics from docker daemon.
+ 1. [Configure Telegraf](https://docs.influxdata.com/telegraf/v1.7/administration/configuration/) using the following instructions [Input plugin](https://docs.influxdata.com/telegraf/v1.7/plugins/inputs/) and [Output plugin](https://docs.influxdata.com/telegraf/v1.7/plugins/outputs/) 
+ As telegraf will collect metrics from [Docker daemon](https://docs.docker.com/engine/api/v1.20/) we need the input plugin configured, and to expose all this one to be polled by Prometheus - need to be configured the output plugin. See the examples of configuring the [Input plugin for Docker daemon](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/docker) and [Output plugin for Prometheus](https://github.com/influxdata/telegraf/tree/master/plugins/outputs/prometheus_client)
+Thus the telegraf.conf is as follows:
+
+```cnf
+[[inputs.docker]]
+  ## Docker Endpoint
+  ##   To use TCP, set endpoint = "tcp://[ip]:[port]"
+  ##   To use environment variables (ie, docker-machine), set endpoint = "ENV"
+  endpoint = "unix:///var/run/docker.sock"
+
+
+[[outputs.prometheus_client]]
+  ## Address to listen on.
+  listen = ":9273"
+
+## If set, the IP Ranges which are allowed to access metrics.
+  ##   ex: ip_range = ["192.168.0.0/24", "192.168.1.0/30"]
+  ip_range = ["10.0.1.0./24","10.0.2.0/24"]
+
+ ## Path to publish the metrics on.
+  path = "/metrics"
+
+```
+
+also add telegraf job to prometheus.yml:
+
+```yml
+  - job_name: 'telegraf'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['telegraf:9273']
+```
+
+Then add telegraf container to the docker-compose-monitoring.yml:
+
+```cnf
+  telegraf:
+    image: ${USER_NAME}/telegraf
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock'
+    networks:
+      backend_net:
+        aliases:
+          - prometheus_net
+```
+ - [x] configure the Alertmanager integration with email notification along with notifications to slack.
+For training we can use free temporary smtp service [Temp Mail](https://rapidapi.com/Privatix/api/temp-mail) also known as: tempmail, 10minutemail, throwaway email, fake-mail or trash-mail(can be filtered by antyspam). Or get free account at [Mailjet](https://www.mailjet.com/pricing/) or at [Mailtrap](https://mailtrap.io/)
+
+Added two parameters to alerts.yml with different alert level "warning" send to mail and "critical" will be sent to slack and mail:
+
+```yml
+  - name: FDLimits
+    rules:
+    - alert: ProcessNearFDLimits
+      expr: process_open_fds / process_max_fds > 0.8    # for checking replace process_open_fds with 1040000
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        description: 'On {{ $labels.instance }} of job {{ $labels.job }} is reaching the open file limit'
+        summary: 'On Instance {{ $labels.instance }} too many files are opened'
+  
+  - name: ResponseTimeLatency
+    rules:
+    - alert: Response time exceeded 0.2 threshold
+      expr: histogram_quantile(0.95, sum(rate(ui_request_response_time_bucket[1m])) by (le)) > 0.2
+      for: 15s
+      labels:
+        severity: warning
+      annotations:
+        description: 'On {{ $labels.instance }} of job {{ $labels.job }} the high latency of response '
+        summary: 'The high latency of responce on Instance {{ $labels.instance }} '
+```
+The appropriate settings made in Alertmanager's config.yml to react on alerts, outlined above.
+
+Several related links: 
+ - [Sending alert notifications to multiple destinations](https://www.robustperception.io/sending-alert-notifications-to-multiple-destinations)
+ 
+ - [Setting up Prometheus alerts](https://0x63.me/setting-up-prometheus-alerts/)
