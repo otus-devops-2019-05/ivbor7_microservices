@@ -9,6 +9,7 @@ ivbor7 microservices repository
 - [HW#15 (docker-5) GitlabCI arrangement](#homework-#15-(gitlab-ci-1-branch))
 - [HW#16 (monitoring-1): Introduction to monitoring systems](#homework-#16-(monitoring-1-branch))
 - [HW#17 (monitoring-2): Application and Infrastructure monitoring](#homework-#17-(monitoring-2-branch))
+- [HW#18 (logging-1): Logging and disributed tracing](#homework-#18-(logging-1-branch))
 
 ## Homework #12 (docker-2 branch)
 
@@ -956,3 +957,109 @@ Several related links:
  - [Sending alert notifications to multiple destinations](https://www.robustperception.io/sending-alert-notifications-to-multiple-destinations)
  
  - [Setting up Prometheus alerts](https://0x63.me/setting-up-prometheus-alerts/)
+
+
+## Homework #18 (logging-1 branch)
+
+Within the hw#18 the following tasks were done:
+ - unstructured logs collecting
+ - Monitoring the microservices state
+ - Collecting hosts metrics using the exporter 
+ - Extra tasks with (*)
+
+Сбор неструктурированных логов
+Визуализация логов
+Сбор структурированных логов
+Распределенная трасировка
+
+
+The standart ELK includes: ElasticSearch, Logstash, Kibana. We will change it a bit and replace the Logstash with Fluentd, as a result we'll obtain EFK tools set.
+
+# Create GCP VM:
+docker-machine create --driver google \
+--google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
+--google-project docker-250311 \
+--google-machine-type n1-standard-1 \
+--google-open-port 5601/tcp \
+--google-open-port 24224/tcp,24224/udp \
+--google-open-port 9292/tcp \
+--google-open-port 9411/tcp \
+logging
+
+# Login to DockerHub
+docker login
+
+# Build microservice's images - separate parts of Reddit application:
+for i in ui comment; do cd src/$i; docker build -t $USER_NAME/$i:logging . && docker push $USER_NAME/$i; cd -; done
+
+cd src/post-py/; docker build -t $USER_NAME/post:logging . && docker push $USER_NAME/post; cd -; done
+# Switch to remote docker-machine env "logging":
+eval $(docker-machine env logging)
+# checking the environment and image availability 
+env | grep DOCKER
+docker images
+
+# build Fluentd image for our centralized logging service
+cd logging/fluentd/ && docker build -t $USER_NAME/fluentd . && docker push $USER_NAME/fluentd && cd -
+
+#### Edit the .env file and replace Tag=latest witg Tag=logging
+
+#### Run application's services:
+`docker/ $ docker-compose up -d`
+
+Fluentd serves for aggregation and transformation of logs in one place. To send the collected logs to Fluentd define the driver for logging in docker/docker-compose.yml:
+
+```yml 
+:docker/docker-compose.yml
+...
+post:
+...
+logging:
+  driver: "fluentd"
+  options:
+    fluentd-address: localhost:24224
+    tag: service.post
+```
+
+echo $USER_NAME
+docker build -t $USER_NAME/fluentd . && cd -
+cd docker/
+docker-compose up -d
+docker-compose logs -f post
+
+$ docker-compose -f docker-compose-logging.yml up -d
+
+Error arised: 
+> Kibana server is not ready yet
+
+Kibana log shows that elasticsearch has "No living connections":
+> $ docker logs f2d6c0e6a96a 
+> {"type":"log","@timestamp":"2019-09-16T07:04:58Z","tags":["warning","elasticsearch","admin"],"pid":1,"message":"No living connections"}
+
+As Kibana depends on [The Elastic Stack, on Docker](https://github.com/elastic/stack-docker) add this dependency in compose file for Kibana service:
+ `depends_on: ['elasticsearch']`
+But it's not enough. Let's see ES startup log:
+
+```sh
+$ docker logs 6981964880e8
+> [2019-09-16T09:06:03,704][INFO ][o.e.b.BootstrapChecks    ] [Trm8hlu] bound or publishing to a non-loopback address, enforcing bootstrap checks
+ERROR: [1] bootstrap checks failed
+[1]: max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]
+```
+Apparently we've faced with known [Virtual memory issue](https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html) also might be useful [Important Elasticsearch configuration](https://www.elastic.co/guide/en/elasticsearch/reference/master/important-settings.html)
+
+Fix:
+
+```sh
+Temporary:
+docker-machine ssh
+sudo sysctl -w vm.max_map_count=262144
+sudo sysctl -p
+or Permament:
+In your host machine
+  vi /etc/sysctl.conf
+  make entry vm.max_map_count=262144
+restart
+```
+
+Structured logs should have a single structure and format so as not to waste time and system resources on data conversion. 
