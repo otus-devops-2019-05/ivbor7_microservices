@@ -961,15 +961,10 @@ Several related links:
 
 Within the hw#18 the following tasks were done:
  - unstructured logs collecting
- - Monitoring the microservices state
- - Collecting hosts metrics using the exporter 
+ - logs visualization using Kibana
+ - structured logs collecting using Fluentd  
+ - distributed tracing
  - Extra tasks with (*)
-
-Сбор неструктурированных логов
-Визуализация логов
-Сбор структурированных логов
-Распределенная трасировка
-
 
 The standart ELK includes: ElasticSearch, Logstash, Kibana. We will change it a bit and replace the Logstash with Fluentd, as a result we'll obtain EFK tools set.
 
