@@ -20,8 +20,18 @@ services:
 #    build: ./ui
     env_file: .env
     image: ${USER_NAME}/ui:${UI_VER}
+    environment:
+      - POST_SERVICE_HOST=post
+      - POST_SERVICE_PORT=5000
+      - COMMENT_SERVICE_HOST=comment
+      - COMMENT_SERVICE_PORT=9292
     ports:
       - ${UI_HOST_PORT}:${UI_CNTR_PORT}/tcp
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: service.ui
     networks:
       - ${NETW_BACK}
 
