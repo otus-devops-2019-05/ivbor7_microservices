@@ -5,7 +5,7 @@ services:
     hostname: post_db
     container_name: post_db
     image: mongo:${MONGODB_VER}
-    env_file: .env
+#    env_file: .env
     volumes:
       - post_db:/data/db
     networks:
@@ -18,7 +18,7 @@ services:
     hostname: ui
     container_name: ui
 #    build: ./ui
-    env_file: .env
+#    env_file: .env
     image: ${USER_NAME}/ui:${UI_VER}
     environment:
       - POST_SERVICE_HOST=post
@@ -39,7 +39,7 @@ services:
     hostname: post
 #    build: ./post-py
     container_name: post
-    env_file: .env
+#    env_file: .env
     image: ${USER_NAME}/post:${POST_VER}
     environment:
       - POST_DATABASE_HOST=post_db
@@ -61,7 +61,7 @@ services:
     hostname: comment
 #    build: ./comment
     container_name: comment
-    env_file: .env
+#    env_file: .env
     image: ${USER_NAME}/comment:${COMMENT_VER}
     networks:
       - ${NETW_FRONT}
