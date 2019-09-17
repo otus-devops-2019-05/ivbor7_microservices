@@ -11,7 +11,7 @@ ivbor7 microservices repository
 - [HW#17 (monitoring-2): Application and Infrastructure monitoring](#homework-#17-(monitoring-2-branch))
 - [HW#18 (logging-1): Logging and disributed tracing](#homework-#18-(logging-1-branch))
 
-#Homework #12 (docker-2 branch)
+#### Homework #12 (docker-2 branch)
 
 Within the hw#12 the following tasks were done:
  - TravisCI plugged up to current repository and integrated with Slack chat
@@ -153,7 +153,7 @@ $ docker run --name reddit --rm -it <dockerhub-login>/otus-reddit:1.0 bash  <-- 
 
  - [ ] Extra task with (*) - create the prototype of infrastructure **in ToDo list** 
 
-#Homework #13 (docker-3 branch)
+#### Homework #13 (docker-3 branch)
 
 Within the hw#13 the following tasks were done:
 
@@ -243,7 +243,7 @@ Dockerfile.# - files contain optimized image description for docker and are loca
 other microservice images: post, comment and ui can be mounted in usual way.
 
 [#hw14]:
-#Homework #14 (docker-4 branch)
+#### Homework #14 (docker-4 branch)
 
 Within the hw#14 the following tasks were done:
  - have investigated how docker work with different network drivers (none, host and bridge) `> docker network create reddit --driver ["none","bridge","host"]`:
@@ -303,7 +303,7 @@ docker run -d --network=reddit -p 9292:9292 ivb/ui:3.0
 Differences between "volumes" and "bind mount" approach is described [there](https://docs.docker.com/storage/volumes/) 
 The new <volumes> key mounts the project directory (microservices directory) on the host to /app inside the container, allowing us to modify the code on the fly, without having to rebuild the image.
 
-#Homework #15 (gitlab-ci-1 branch)
+#### Homework #15 (gitlab-ci-1 branch)
 
  - create vm instance via gcloud compute command group:
 
@@ -492,7 +492,7 @@ Useful links:
 [TOML - ](https://github.com/toml-lang/toml)
 [Best practices for building docker images with GitLab CI](https://blog.callr.tech/building-docker-images-with-gitlab-ci-best-practices/)
 
-#Homework #16 (monitoring-1 branch)
+#### Homework #16 (monitoring-1 branch)
 
 Within the hw#16 the following tasks were done:
  - Prometheus: run, configure and familiarity with Web UI
@@ -687,7 +687,7 @@ Links to additional information:
 
 _IMPORTANT NOTE:_ before running Makefile, it's necessary to rename Madefile to Makefile in microservices' folders src/ui|comment|post-py
 
-#Homework #17 (monitoring-2 branch)
+#### Homework #17 (monitoring-2 branch)
 
 - Docker containers monitoring
 - Metrics visualization
@@ -957,7 +957,7 @@ Several related links:
  - [Setting up Prometheus alerts](https://0x63.me/setting-up-prometheus-alerts/)
 
 
-#Homework #18 (logging-1 branch)
+#### Homework #18 (logging-1 branch)
 
 Within the hw#18 the following tasks were done:
  - unstructured logs collecting
