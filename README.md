@@ -1046,7 +1046,7 @@ $ docker logs 6981964880e8
 ERROR: [1] bootstrap checks failed
 [1]: max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]
 ```
-Apparently we've faced with known [Virtual memory issue](https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html) also might be useful [Important Elasticsearch configuration](https://www.elastic.co/guide/en/elasticsearch/reference/master/important-settings.html)
+Apparently we've faced with known [Virtual memory issue](https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html) also might be useful [Important Elasticsearch configuration](https://www.elastic.co/guide/en/elasticsearch/reference/master/important-settings.html) and [Elasticsearch is not starting](https://elk-docker.readthedocs.io/#es-not-starting-max-map-count)
 
 Fix:
 
@@ -1063,3 +1063,98 @@ restart
 ```
 
 Structured logs should have a single structure and format so as not to waste time and system resources on data conversion. 
+
+Tune parsing for post and ui service  using the Grok pattern instead regexp:
+
+```yml
+<filter service.ui>
+  @type parser
+#  format /\[(?<time>[^\]]*)\]  (?<level>\S+) (?<user>\S+)[\W]*service=(?<service>\S+)[\W]*event=(?<event>\S+)[\W]*(?:path=(?<path>\S+)[\W]*)?request_id=(?<request_id>\S+)[\W]*(?:remote_addr=$
+  format grok
+  grok_pattern %{RUBY_LOGGER}
+  key_name log
+</filter>
+
+<filter service.ui>
+  @type parser
+  format grok
+  grok_pattern service=%{WORD:service} \| event=%{WORD:event} \| request_id=%{GREEDYDATA:request_id} \| message='%{GREEDYDATA:message}'
+  key_name message
+  reserve_data true
+</filter>
+
+```
+ - [x] extra task with (*):
+Here is the basic syntax format for a Logstash grok filter:
+
+> %{PATTERN:FieldName}
+
+For the convenience of writing a pattern use the [Grok Debugger](https://grokdebug.herokuapp.com/)
+The following pattern was added to parse a log snippet that remained unparsed after previous two steps:
+
+```yml
+<filter service.ui>
+  @type parser
+  format grok
+  grok_pattern service=%{WORD:service} \| event=%{WORD:event} \| path=%{UNIXPATH:path} \| request_id=%{GREEDYDATA:request_id} \| remote_addr=%{IPV4:remote_addr} \| method=%{DATA:method} \| response_status=%{NONNEGINT:response_status}
+  key_name message
+</filter>
+```
+
+
+
+Services: ui_app
+Date Time 	Relative Time 	Annotation 	Address
+17/09/2019, 01:13:42 		Server Start 	10.0.2.2:9292 (ui_app)
+17/09/2019, 01:14:15 	33.080s 	Server Finish 	10.0.2.2:9292 (ui_app)
+
+
+post./post/<id>: 3.031s
+
+Services: post,ui_app
+Date Time 	Relative Time 	Annotation 	Address
+17/09/2019, 01:13:42 	1.623ms 	Client Start 	10.0.2.2:9292 (ui_app)
+17/09/2019, 01:13:42 	4.452ms 	Server Start 	10.0.1.4:5000 (post)
+17/09/2019, 01:13:45 	3.025s 	Server Finish 	10.0.1.4:5000 (post)
+17/09/2019, 01:13:45 	3.032s 	Client Finish 	10.0.2.2:9292 (ui_app)
+
+post.db_find_single_post: 3.006s
+Services: post
+Date Time 	Relative Time 	Annotation 	Address
+17/09/2019, 01:13:42 	4.562ms 	Client Start 	10.0.1.4:5000 (post)
+17/09/2019, 01:13:42 	4.562ms 	Server Start 	10.0.1.4:5000 (post)
+17/09/2019, 01:13:45 	3.010s 	Client Finish 	10.0.1.4:5000 (post)
+17/09/2019, 01:13:45 	3.010s 	Server Finish 	10.0.1.4:5000 (post)
+
+As we can see the most time spent by the post service when accessing the database. Obviously, the issue with response delay should be sought in the post service (post_app.py)
+
+```py
+# Retrieve information about a post
+@zipkin_span(service_name='post', span_name='db_find_single_post')
+def find_post(id):
+    start_time = time.time()
+    try:
+        post = app.db.find_one({'_id': ObjectId(id)})
+    except Exception as e:
+        log_event('error', 'post_find',
+                  "Failed to find the post. Reason: {}".format(str(e)),
+                  request.values)
+        abort(500)
+    else:
+        stop_time = time.time()  # + 0.3
+        resp_time = stop_time - start_time
+        app.post_read_db_seconds.observe(resp_time)
+!!!!==> #time.sleep(3)                              <==!!!!
+        log_event('info', 'post_find',
+                  'Successfully found the post information',
+                  {'post_id': id})
+        return dumps(post)
+```
+
+post.db_find_single_post: 4.384ms
+Services: post
+Date Time 	Relative Time 	Annotation 	Address
+17/09/2019, 01:47:24 	14.506ms 	Client Start 	10.0.1.4:5000 (post)
+17/09/2019, 01:47:24 	14.506ms 	Server Start 	10.0.1.4:5000 (post)
+17/09/2019, 01:47:24 	18.890ms 	Client Finish 	10.0.1.4:5000 (post)
+17/09/2019, 01:47:24 	18.890ms 	Server Finish 	10.0.1.4:5000 (post)
