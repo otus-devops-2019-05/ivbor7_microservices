@@ -975,7 +975,7 @@ Within the hw#18 the following tasks were done:
 
 The standart ELK includes: ElasticSearch, Logstash, Kibana. We will change it a bit and replace the Logstash with Fluentd, as a result we'll obtain EFK tools set.
 
-# Create GCP VM:
+####Create GCP VM:
 docker-machine create --driver google \
 --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
 --google-project docker-250311 \
@@ -986,20 +986,20 @@ docker-machine create --driver google \
 --google-open-port 9411/tcp \
 logging
 
-# Login to DockerHub
+####Login to DockerHub
 docker login
 
-# Build microservice's images - separate parts of Reddit application:
+####Build microservice's images - separate parts of Reddit application:
 for i in ui comment; do cd src/$i; docker build -t $USER_NAME/$i:logging . && docker push $USER_NAME/$i; cd -; done
 
 cd src/post-py/; docker build -t $USER_NAME/post:logging . && docker push $USER_NAME/post; cd -; done
-# Switch to remote docker-machine env "logging":
+####Switch to remote docker-machine env "logging":
 eval $(docker-machine env logging)
-# checking the environment and image availability 
+####checking the environment and image availability 
 env | grep DOCKER
 docker images
 
-# build Fluentd image for our centralized logging service
+####build Fluentd image for our centralized logging service
 cd logging/fluentd/ && docker build -t $USER_NAME/fluentd . && docker push $USER_NAME/fluentd && cd -
 
 #### Edit the .env file and replace Tag=latest witg Tag=logging
