@@ -1101,16 +1101,15 @@ The following pattern was added to parse a log snippet that remained unparsed af
 </filter>
 ```
 
+Tracing:
 
-
+```sh
 Services: ui_app
 Date Time 	Relative Time 	Annotation 	Address
 17/09/2019, 01:13:42 		Server Start 	10.0.2.2:9292 (ui_app)
 17/09/2019, 01:14:15 	33.080s 	Server Finish 	10.0.2.2:9292 (ui_app)
 
-
 post./post/<id>: 3.031s
-
 Services: post,ui_app
 Date Time 	Relative Time 	Annotation 	Address
 17/09/2019, 01:13:42 	1.623ms 	Client Start 	10.0.2.2:9292 (ui_app)
@@ -1118,28 +1117,25 @@ Date Time 	Relative Time 	Annotation 	Address
 17/09/2019, 01:13:45 	3.025s 	Server Finish 	10.0.1.4:5000 (post)
 17/09/2019, 01:13:45 	3.032s 	Client Finish 	10.0.2.2:9292 (ui_app)
 
+ - !!!the weak link in our chain:!!!
+-------------------------------------
 post.db_find_single_post: 3.006s
 Services: post
 Date Time 	Relative Time 	Annotation 	Address
 17/09/2019, 01:13:42 	4.562ms 	Client Start 	10.0.1.4:5000 (post)
 17/09/2019, 01:13:42 	4.562ms 	Server Start 	10.0.1.4:5000 (post)
-17/09/2019, 01:13:45 	3.010s 	Client Finish 	10.0.1.4:5000 (post)
+->17/09/2019, 01:13:45 	3.010s 	Client Finish 	10.0.1.4:5000 (post)
+------------------------------------------------------------------
 17/09/2019, 01:13:45 	3.010s 	Server Finish 	10.0.1.4:5000 (post)
 
-As we can see the most time spent by the post service when accessing the database. Obviously, the issue with response delay should be sought in the post service (post_app.py)
+As we can see the most time is spent accessing the database. Obviously, the issue with response delay should be sought in the post service (post_app.py)
 
 ```py
 # Retrieve information about a post
 @zipkin_span(service_name='post', span_name='db_find_single_post')
 def find_post(id):
     start_time = time.time()
-    try:
-        post = app.db.find_one({'_id': ObjectId(id)})
-    except Exception as e:
-        log_event('error', 'post_find',
-                  "Failed to find the post. Reason: {}".format(str(e)),
-                  request.values)
-        abort(500)
+...
     else:
         stop_time = time.time()  # + 0.3
         resp_time = stop_time - start_time
@@ -1151,6 +1147,9 @@ def find_post(id):
         return dumps(post)
 ```
 
+After applying the fix:
+
+```sh
 post.db_find_single_post: 4.384ms
 Services: post
 Date Time 	Relative Time 	Annotation 	Address
@@ -1158,3 +1157,4 @@ Date Time 	Relative Time 	Annotation 	Address
 17/09/2019, 01:47:24 	14.506ms 	Server Start 	10.0.1.4:5000 (post)
 17/09/2019, 01:47:24 	18.890ms 	Client Finish 	10.0.1.4:5000 (post)
 17/09/2019, 01:47:24 	18.890ms 	Server Finish 	10.0.1.4:5000 (post)
+```
