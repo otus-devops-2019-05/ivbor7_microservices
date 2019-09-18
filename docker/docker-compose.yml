@@ -5,7 +5,7 @@ services:
     hostname: post_db
     container_name: post_db
     image: mongo:${MONGODB_VER}
-    env_file: .env
+#    env_file: .env
     volumes:
       - post_db:/data/db
     networks:
@@ -18,10 +18,20 @@ services:
     hostname: ui
     container_name: ui
 #    build: ./ui
-    env_file: .env
+#    env_file: .env
     image: ${USER_NAME}/ui:${UI_VER}
+    environment:
+      - POST_SERVICE_HOST=post
+      - POST_SERVICE_PORT=5000
+      - COMMENT_SERVICE_HOST=comment
+      - COMMENT_SERVICE_PORT=9292
     ports:
       - ${UI_HOST_PORT}:${UI_CNTR_PORT}/tcp
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: service.ui
     networks:
       - ${NETW_BACK}
 
@@ -29,8 +39,20 @@ services:
     hostname: post
 #    build: ./post-py
     container_name: post
-    env_file: .env
+#    env_file: .env
     image: ${USER_NAME}/post:${POST_VER}
+    environment:
+      - POST_DATABASE_HOST=post_db
+      - POST_DATABASE=posts
+    depends_on:
+      - post_db
+    ports:
+      - "5000:5000"
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: service.post
     networks:
       - ${NETW_FRONT}
       - ${NETW_BACK}
@@ -39,7 +61,7 @@ services:
     hostname: comment
 #    build: ./comment
     container_name: comment
-    env_file: .env
+#    env_file: .env
     image: ${USER_NAME}/comment:${COMMENT_VER}
     networks:
       - ${NETW_FRONT}

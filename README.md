@@ -9,8 +9,9 @@ ivbor7 microservices repository
 - [HW#15 (docker-5) GitlabCI arrangement](#homework-#15-(gitlab-ci-1-branch))
 - [HW#16 (monitoring-1): Introduction to monitoring systems](#homework-#16-(monitoring-1-branch))
 - [HW#17 (monitoring-2): Application and Infrastructure monitoring](#homework-#17-(monitoring-2-branch))
+- [HW#18 (logging-1): Logging and disributed tracing](#homework-#18-(logging-1-branch))
 
-## Homework #12 (docker-2 branch)
+#### Homework #12 (docker-2 branch)
 
 Within the hw#12 the following tasks were done:
  - TravisCI plugged up to current repository and integrated with Slack chat
@@ -152,9 +153,7 @@ $ docker run --name reddit --rm -it <dockerhub-login>/otus-reddit:1.0 bash  <-- 
 
  - [ ] Extra task with (*) - create the prototype of infrastructure **in ToDo list** 
 
-[.#hw13]:
-
-## Homework #13 (docker-3 branch)
+#### Homework #13 (docker-3 branch)
 
 Within the hw#13 the following tasks were done:
 
@@ -244,7 +243,7 @@ Dockerfile.# - files contain optimized image description for docker and are loca
 other microservice images: post, comment and ui can be mounted in usual way.
 
 [#hw14]:
-## Homework #14 (docker-4 branch)
+#### Homework #14 (docker-4 branch)
 
 Within the hw#14 the following tasks were done:
  - have investigated how docker work with different network drivers (none, host and bridge) `> docker network create reddit --driver ["none","bridge","host"]`:
@@ -304,7 +303,7 @@ docker run -d --network=reddit -p 9292:9292 ivb/ui:3.0
 Differences between "volumes" and "bind mount" approach is described [there](https://docs.docker.com/storage/volumes/) 
 The new <volumes> key mounts the project directory (microservices directory) on the host to /app inside the container, allowing us to modify the code on the fly, without having to rebuild the image.
 
-## Homework #15 (gitlab-ci-1 branch)
+#### Homework #15 (gitlab-ci-1 branch)
 
  - create vm instance via gcloud compute command group:
 
@@ -493,7 +492,7 @@ Useful links:
 [TOML - ](https://github.com/toml-lang/toml)
 [Best practices for building docker images with GitLab CI](https://blog.callr.tech/building-docker-images-with-gitlab-ci-best-practices/)
 
-## Homework #16 (monitoring-1 branch)
+#### Homework #16 (monitoring-1 branch)
 
 Within the hw#16 the following tasks were done:
  - Prometheus: run, configure and familiarity with Web UI
@@ -688,7 +687,7 @@ Links to additional information:
 
 _IMPORTANT NOTE:_ before running Makefile, it's necessary to rename Madefile to Makefile in microservices' folders src/ui|comment|post-py
 
-## Homework #17 (monitoring-2 branch)
+#### Homework #17 (monitoring-2 branch)
 
 - Docker containers monitoring
 - Metrics visualization
@@ -956,3 +955,199 @@ Several related links:
  - [Sending alert notifications to multiple destinations](https://www.robustperception.io/sending-alert-notifications-to-multiple-destinations)
  
  - [Setting up Prometheus alerts](https://0x63.me/setting-up-prometheus-alerts/)
+
+
+#### Homework #18 (logging-1 branch)
+
+Within the hw#18 the following tasks were done:
+ - unstructured logs collecting
+ - logs visualization using Kibana
+ - structured logs collecting using Fluentd  
+ - distributed tracing
+ - Extra tasks with (*)
+
+The standart ELK includes: ElasticSearch, Logstash, Kibana. We will change it a bit and replace the Logstash with Fluentd, as a result we'll obtain EFK tools set.
+
+####Create GCP VM:
+docker-machine create --driver google \
+--google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
+--google-project docker-250311 \
+--google-machine-type n1-standard-1 \
+--google-open-port 5601/tcp \
+--google-open-port 24224/tcp,24224/udp \
+--google-open-port 9292/tcp \
+--google-open-port 9411/tcp \
+logging
+
+####Login to DockerHub
+docker login
+
+####Build microservice's images - separate parts of Reddit application:
+for i in ui comment; do cd src/$i; docker build -t $USER_NAME/$i:logging . && docker push $USER_NAME/$i; cd -; done
+
+cd src/post-py/; docker build -t $USER_NAME/post:logging . && docker push $USER_NAME/post; cd -; done
+####Switch to remote docker-machine env "logging":
+eval $(docker-machine env logging)
+####checking the environment and image availability 
+env | grep DOCKER
+docker images
+
+####build Fluentd image for our centralized logging service
+cd logging/fluentd/ && docker build -t $USER_NAME/fluentd . && docker push $USER_NAME/fluentd && cd -
+
+#### Edit the .env file and replace Tag=latest witg Tag=logging
+
+#### Run application's services:
+`docker/ $ docker-compose up -d`
+
+Fluentd serves for aggregation and transformation of logs in one place. To send the collected logs to Fluentd define the driver for logging in docker/docker-compose.yml:
+
+```yml 
+:docker/docker-compose.yml
+...
+post:
+...
+logging:
+  driver: "fluentd"
+  options:
+    fluentd-address: localhost:24224
+    tag: service.post
+```
+
+echo $USER_NAME
+docker build -t $USER_NAME/fluentd . && cd -
+cd docker/
+docker-compose up -d
+docker-compose logs -f post
+
+$ docker-compose -f docker-compose-logging.yml up -d
+
+Error arised: 
+> Kibana server is not ready yet
+
+Kibana log shows that elasticsearch has "No living connections":
+> $ docker logs f2d6c0e6a96a 
+> {"type":"log","@timestamp":"2019-09-16T07:04:58Z","tags":["warning","elasticsearch","admin"],"pid":1,"message":"No living connections"}
+
+As Kibana depends on [The Elastic Stack, on Docker](https://github.com/elastic/stack-docker) add this dependency in compose file for Kibana service:
+ `depends_on: ['elasticsearch']`
+But it's not enough. Let's see ES startup log:
+
+```sh
+$ docker logs 6981964880e8
+> [2019-09-16T09:06:03,704][INFO ][o.e.b.BootstrapChecks    ] [Trm8hlu] bound or publishing to a non-loopback address, enforcing bootstrap checks
+ERROR: [1] bootstrap checks failed
+[1]: max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]
+```
+Apparently we've faced with known [Virtual memory issue](https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html) also might be useful [Important Elasticsearch configuration](https://www.elastic.co/guide/en/elasticsearch/reference/master/important-settings.html) and [Elasticsearch is not starting](https://elk-docker.readthedocs.io/#es-not-starting-max-map-count)
+
+Fix:
+
+```sh
+Temporary:
+docker-machine ssh
+sudo sysctl -w vm.max_map_count=262144
+sudo sysctl -p
+or Permament:
+In your host machine
+  vi /etc/sysctl.conf
+  make entry vm.max_map_count=262144
+restart
+```
+
+Structured logs should have a single structure and format so as not to waste time and system resources on data conversion. 
+
+Tune parsing for post and ui service  using the Grok pattern instead regexp:
+
+```yml
+<filter service.ui>
+  @type parser
+#  format /\[(?<time>[^\]]*)\]  (?<level>\S+) (?<user>\S+)[\W]*service=(?<service>\S+)[\W]*event=(?<event>\S+)[\W]*(?:path=(?<path>\S+)[\W]*)?request_id=(?<request_id>\S+)[\W]*(?:remote_addr=$
+  format grok
+  grok_pattern %{RUBY_LOGGER}
+  key_name log
+</filter>
+
+<filter service.ui>
+  @type parser
+  format grok
+  grok_pattern service=%{WORD:service} \| event=%{WORD:event} \| request_id=%{GREEDYDATA:request_id} \| message='%{GREEDYDATA:message}'
+  key_name message
+  reserve_data true
+</filter>
+
+```
+ - [x] extra task with (*):
+Here is the basic syntax format for a Logstash grok filter:
+
+> %{PATTERN:FieldName}
+
+For the convenience of writing a pattern use the [Grok Debugger](https://grokdebug.herokuapp.com/)
+The following pattern was added to parse a log snippet that remained unparsed after previous two steps:
+
+```yml
+<filter service.ui>
+  @type parser
+  format grok
+  grok_pattern service=%{WORD:service} \| event=%{WORD:event} \| path=%{UNIXPATH:path} \| request_id=%{GREEDYDATA:request_id} \| remote_addr=%{IPV4:remote_addr} \| method=%{DATA:method} \| response_status=%{NONNEGINT:response_status}
+  key_name message
+</filter>
+```
+
+Tracing:
+
+```sh
+Services: ui_app
+Date Time 	Relative Time 	Annotation 	Address
+17/09/2019, 01:13:42 		Server Start 	10.0.2.2:9292 (ui_app)
+17/09/2019, 01:14:15 	33.080s 	Server Finish 	10.0.2.2:9292 (ui_app)
+
+post./post/<id>: 3.031s
+Services: post,ui_app
+Date Time 	Relative Time 	Annotation 	Address
+17/09/2019, 01:13:42 	1.623ms 	Client Start 	10.0.2.2:9292 (ui_app)
+17/09/2019, 01:13:42 	4.452ms 	Server Start 	10.0.1.4:5000 (post)
+17/09/2019, 01:13:45 	3.025s 	Server Finish 	10.0.1.4:5000 (post)
+17/09/2019, 01:13:45 	3.032s 	Client Finish 	10.0.2.2:9292 (ui_app)
+
+ - !!!the weak link in our chain:!!!
+-------------------------------------
+post.db_find_single_post: 3.006s
+Services: post
+Date Time 	Relative Time 	Annotation 	Address
+17/09/2019, 01:13:42 	4.562ms 	Client Start 	10.0.1.4:5000 (post)
+17/09/2019, 01:13:42 	4.562ms 	Server Start 	10.0.1.4:5000 (post)
+->17/09/2019, 01:13:45 	3.010s 	Client Finish 	10.0.1.4:5000 (post)
+------------------------------------------------------------------
+17/09/2019, 01:13:45 	3.010s 	Server Finish 	10.0.1.4:5000 (post)
+
+As we can see the most time is spent accessing the database. Obviously, the issue with response delay should be sought in the post service (post_app.py)
+
+```py
+# Retrieve information about a post
+@zipkin_span(service_name='post', span_name='db_find_single_post')
+def find_post(id):
+    start_time = time.time()
+...
+    else:
+        stop_time = time.time()  # + 0.3
+        resp_time = stop_time - start_time
+        app.post_read_db_seconds.observe(resp_time)
+!!!!==> #time.sleep(3)                              <==!!!!
+        log_event('info', 'post_find',
+                  'Successfully found the post information',
+                  {'post_id': id})
+        return dumps(post)
+```
+
+After applying the fix:
+
+```sh
+post.db_find_single_post: 4.384ms
+Services: post
+Date Time 	Relative Time 	Annotation 	Address
+17/09/2019, 01:47:24 	14.506ms 	Client Start 	10.0.1.4:5000 (post)
+17/09/2019, 01:47:24 	14.506ms 	Server Start 	10.0.1.4:5000 (post)
+17/09/2019, 01:47:24 	18.890ms 	Client Finish 	10.0.1.4:5000 (post)
+17/09/2019, 01:47:24 	18.890ms 	Server Finish 	10.0.1.4:5000 (post)
+```
