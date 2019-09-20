@@ -820,7 +820,7 @@ All generated images were pushed to the [Docker regestry](https://cloud.docker.c
 
 #### with (*):
 - [x] - Update Makefile. Add working with images for monitoring services 
-- [x] - Add experimental feature that allows the [Docker metrics to be exported](https://docs.docker.com/config/thirdparty/prometheus/) using the Prometheus syntax. See an example [how to collect Docker daemon metrics](https://ops.tips/gists/how-to-collect-docker-daemon-metrics/) You can try to integrate the docker metrics locally on Docker-machine or with help [Katatcoda browser based hands on lab](https://www.katacoda.com/courses/prometheus/docker-metrics). In case of GCP, once running the instance with docker onboard, connect to the docker host via ssh `docker-machine ssh docker-host` and take the following steps:
+- [x] - Add experimental feature that allows the [Docker metrics to be exported](https://docs.docker.com/config/thirdparty/prometheus/) using the Prometheus syntax. See an example [how to collect Docker daemon metrics](https://ops.tips/gists/how-to-collect-docker-daemon-metrics/) You can try to integrate the docker metrics locally on Docker-machine or with help [Katacoda browser based hands on lab](https://www.katacoda.com/courses/prometheus/docker-metrics). In case of GCP, once running the instance with docker onboard, connect to the docker host via ssh `docker-machine ssh docker-host` and take the following steps:
 
  1. The command below will update the systemd configuration used to start Docker to set the flags when the daemon starts and then restarts Docker.
 
@@ -1485,3 +1485,63 @@ Relative links:
  - [Развертывание Kubernetes кластера при помощи Rancher 2.0](https://www.youtube.com/watch?v=3NX40K9D6tk)
  - [Rancher 2.0](https://habr.com/ru/company/flant/blog/339120/)
  - [Rancher 2.0 Tech preview](https://www.youtube.com/watch?v=Ma6FsuWI2Nc)
+
+
+
+## Homework #20
+
+ - Run Minikube-cluster(one-node cluster): `$ minikube start`
+While the minicube was bringing up the kubctl config file ~/.kube/config was configured.
+~/.kube/config - it's a place where cluster's context (user, cluster, namespace) is stored. It's also known as a kubernetes manifest. To run the application in kubernetes the target applicatio state should be described via CLI or in yaml-file called manifest.
+Key section in context: 
+ _user_ - username for connection to cluster
+ _cluster_ - API server:
+   - _server_ - kubernetes API server address 
+   - _ certificate-authority_ - the root certificate the SSL-certificate on server itself is signed with
+   - _name_ - the name for identification in config
+ _namespace_ - visibility area (not mandatory)
+
+ - Getting info about nodes: 
+
+```sh
+$ kubectl get nodes                                          
+NAME       STATUS   ROLES    AGE     VERSION                                                    
+minikube   Ready    <none>   6m59s   v1.15.2
+```
+
+The usual cluster setup order is as follow. In such way the kubctl is configured for connection to certain cluster:
+1. Create cluster : `$ kubectl config set-cluster ... cluster_name`
+2. Create user credentials: `$ kubectl config set-credentials ... user_name`
+3. Create a context: 
+
+```sh
+$ kubectl config set-context context_name \
+--cluster=cluster_name \
+--user=user_name
+```
+
+4. Use the context: `$ kubectl config use-context context_name`
+
+ - get the current context: `$ kubectl config current-context`
+
+ - get the list of contexts: 
+
+```sh 
+$ kubectl config get-contexts                                
+CURRENT   NAME                      CLUSTER                   AUTHINFO   NAMESPACE              
+          kubernetes-the-hard-way   kubernetes-the-hard-way   admin      
+*         minikube                  minikube                  minikube
+```
+
+
+
+
+
+(kubernetes-2 branch)
+
+- Развернуть локальное окружение для работы с
+Kubernetes
+• Развернуть Kubernetes в GKE
+• Запустить reddit в Kubernetes
+
+ - [x] installed and checked the presence of [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/), [VirtualBox](https://www.virtualbox.org/wiki/Downloads), [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
