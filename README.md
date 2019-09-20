@@ -3,15 +3,18 @@ ivbor7 microservices repository
 
 ## Table of Contents:
 
-- [HW#12 (docker-2): branch: TravisCI, Docker, Docker-compose](#homework-#12-(docker-2-branch))
-- [HW#13 (docker-3): branch: Microservices](#homework-#13-(docker-3-branch))
-- [HW#14 (docker-4): Docker network](#homework-#14-(docker-4-branch))
-- [HW#15 (docker-5) GitlabCI arrangement](#homework-#15-(gitlab-ci-1-branch))
-- [HW#16 (monitoring-1): Introduction to monitoring systems](#homework-#16-(monitoring-1-branch))
-- [HW#17 (monitoring-2): Application and Infrastructure monitoring](#homework-#17-(monitoring-2-branch))
-- [HW#18 (logging-1): Logging and disributed tracing](#homework-#18-(logging-1-branch))
+- [HW#12 (docker-2): branch: TravisCI, Docker, Docker-compose](#-homework-#12)
+- [HW#13 (docker-3): branch: Microservices](#-homework-#13)
+- [HW#14 (docker-4): Docker network](#-homework-#14)
+- [HW#15 (docker-5) GitlabCI arrangement](#-homework-#15)
+- [HW#16 (monitoring-1): Introduction to monitoring systems](#-homework-#16)
+- [HW#17 (monitoring-2): Application and Infrastructure monitoring](#-homework-#17)
+- [HW#18 (logging-1): Logging and disributed tracing](#-homework-#18)
+- [HW#19 (kubernetes-1): Introduction to Kubernetes](#-homework-#19)
 
-#### Homework #12 (docker-2 branch)
+
+#### Homework #12
+(docker-2 branch)
 
 Within the hw#12 the following tasks were done:
  - TravisCI plugged up to current repository and integrated with Slack chat
@@ -153,7 +156,8 @@ $ docker run --name reddit --rm -it <dockerhub-login>/otus-reddit:1.0 bash  <-- 
 
  - [ ] Extra task with (*) - create the prototype of infrastructure **in ToDo list** 
 
-#### Homework #13 (docker-3 branch)
+#### Homework #13
+(docker-3 branch)
 
 Within the hw#13 the following tasks were done:
 
@@ -243,7 +247,8 @@ Dockerfile.# - files contain optimized image description for docker and are loca
 other microservice images: post, comment and ui can be mounted in usual way.
 
 [#hw14]:
-#### Homework #14 (docker-4 branch)
+#### Homework #14
+(docker-4 branch)
 
 Within the hw#14 the following tasks were done:
  - have investigated how docker work with different network drivers (none, host and bridge) `> docker network create reddit --driver ["none","bridge","host"]`:
@@ -303,7 +308,8 @@ docker run -d --network=reddit -p 9292:9292 ivb/ui:3.0
 Differences between "volumes" and "bind mount" approach is described [there](https://docs.docker.com/storage/volumes/) 
 The new <volumes> key mounts the project directory (microservices directory) on the host to /app inside the container, allowing us to modify the code on the fly, without having to rebuild the image.
 
-#### Homework #15 (gitlab-ci-1 branch)
+#### Homework #15
+(gitlab-ci-1 branch)
 
  - create vm instance via gcloud compute command group:
 
@@ -492,7 +498,8 @@ Useful links:
 [TOML - ](https://github.com/toml-lang/toml)
 [Best practices for building docker images with GitLab CI](https://blog.callr.tech/building-docker-images-with-gitlab-ci-best-practices/)
 
-#### Homework #16 (monitoring-1 branch)
+#### Homework #16
+(monitoring-1 branch)
 
 Within the hw#16 the following tasks were done:
  - Prometheus: run, configure and familiarity with Web UI
@@ -687,7 +694,8 @@ Links to additional information:
 
 _IMPORTANT NOTE:_ before running Makefile, it's necessary to rename Madefile to Makefile in microservices' folders src/ui|comment|post-py
 
-#### Homework #17 (monitoring-2 branch)
+#### Homework #17
+(monitoring-2 branch)
 
 - Docker containers monitoring
 - Metrics visualization
@@ -957,7 +965,8 @@ Several related links:
  - [Setting up Prometheus alerts](https://0x63.me/setting-up-prometheus-alerts/)
 
 
-#### Homework #18 (logging-1 branch)
+#### Homework #18
+(logging-1 branch)
 
 Within the hw#18 the following tasks were done:
  - unstructured logs collecting
@@ -968,7 +977,9 @@ Within the hw#18 the following tasks were done:
 
 The standart ELK includes: ElasticSearch, Logstash, Kibana. We will change it a bit and replace the Logstash with Fluentd, as a result we'll obtain EFK tools set.
 
-####Create GCP VM:
+#### Create GCP VM:
+
+```sh
 docker-machine create --driver google \
 --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
 --google-project docker-250311 \
@@ -978,22 +989,30 @@ docker-machine create --driver google \
 --google-open-port 9292/tcp \
 --google-open-port 9411/tcp \
 logging
+```
 
-####Login to DockerHub
-docker login
+#### Login to DockerHub: `sh docker login`
 
-####Build microservice's images - separate parts of Reddit application:
-for i in ui comment; do cd src/$i; docker build -t $USER_NAME/$i:logging . && docker push $USER_NAME/$i; cd -; done
+#### Build microservice's images - separate parts of Reddit application:
+
+```sh
+for i in ui comment; do cd src/$i; docker build -t $USER_NAME/$i:logging . && docker push $USER_NAME/$i; cd -; done`
 
 cd src/post-py/; docker build -t $USER_NAME/post:logging . && docker push $USER_NAME/post; cd -; done
-####Switch to remote docker-machine env "logging":
-eval $(docker-machine env logging)
-####checking the environment and image availability 
+```
+
+#### Switch to remote docker-machine env "logging":
+`eval $(docker-machine env logging)`
+
+#### checking the environment and image availability:
+
+```sh
 env | grep DOCKER
 docker images
+```
 
-####build Fluentd image for our centralized logging service
-cd logging/fluentd/ && docker build -t $USER_NAME/fluentd . && docker push $USER_NAME/fluentd && cd -
+#### build Fluentd image for our centralized logging service
+`cd logging/fluentd/ && docker build -t $USER_NAME/fluentd . && docker push $USER_NAME/fluentd && cd -`
 
 #### Edit the .env file and replace Tag=latest witg Tag=logging
 
@@ -1014,15 +1033,21 @@ logging:
     tag: service.post
 ```
 
+#### Build the fluentd image:
+
+```sh
 echo $USER_NAME
 docker build -t $USER_NAME/fluentd . && cd -
 cd docker/
 docker-compose up -d
 docker-compose logs -f post
+```
 
-$ docker-compose -f docker-compose-logging.yml up -d
+#### Bring up logging center:
 
-Error arised: 
+`$ docker-compose -f docker-compose-logging.yml up -d`
+
+Error arised:
 > Kibana server is not ready yet
 
 Kibana log shows that elasticsearch has "No living connections":
@@ -1031,6 +1056,7 @@ Kibana log shows that elasticsearch has "No living connections":
 
 As Kibana depends on [The Elastic Stack, on Docker](https://github.com/elastic/stack-docker) add this dependency in compose file for Kibana service:
  `depends_on: ['elasticsearch']`
+
 But it's not enough. Let's see ES startup log:
 
 ```sh
@@ -1039,6 +1065,7 @@ $ docker logs 6981964880e8
 ERROR: [1] bootstrap checks failed
 [1]: max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]
 ```
+
 Apparently we've faced with known [Virtual memory issue](https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html) also might be useful [Important Elasticsearch configuration](https://www.elastic.co/guide/en/elasticsearch/reference/master/important-settings.html) and [Elasticsearch is not starting](https://elk-docker.readthedocs.io/#es-not-starting-max-map-count)
 
 Fix:
@@ -1075,9 +1102,10 @@ Tune parsing for post and ui service  using the Grok pattern instead regexp:
   key_name message
   reserve_data true
 </filter>
-
 ```
+ 
  - [x] extra task with (*):
+
 Here is the basic syntax format for a Logstash grok filter:
 
 > %{PATTERN:FieldName}
@@ -1094,7 +1122,7 @@ The following pattern was added to parse a log snippet that remained unparsed af
 </filter>
 ```
 
-Tracing:
+Tracing report:
 
 ```sh
 Services: ui_app
@@ -1151,3 +1179,309 @@ Date Time 	Relative Time 	Annotation 	Address
 17/09/2019, 01:47:24 	18.890ms 	Client Finish 	10.0.1.4:5000 (post)
 17/09/2019, 01:47:24 	18.890ms 	Server Finish 	10.0.1.4:5000 (post)
 ```
+
+#### Homework #19
+(kubernetes-1 branch)
+
+Walking through the setting up [Kubernetes the hard way](https://github.com/kelseyhightower/kubernetes-the-hard-way), the configuration files and certificates were generated
+and placed into kubernetes/the_hard_way folder
+
+The final tests shows that Kubernetes cluster is functioning correctly:
+
+### Verification
+
+- Check the health of the remote Kubernetes cluster:
+
+```sh
+$ kubectl get componentstatuses
+NAME                 STATUS    MESSAGE             ERROR
+controller-manager   Healthy   ok                  
+scheduler            Healthy   ok                  
+etcd-0               Healthy   {"health":"true"}   
+etcd-1               Healthy   {"health":"true"}   
+etcd-2               Healthy   {"health":"true"} 
+
+$ kubectl get nodes
+NAME       STATUS   ROLES    AGE   VERSION
+worker-0   Ready    <none>   7m    v1.15.3
+worker-1   Ready    <none>   7m    v1.15.3
+worker-2   Ready    <none>   7m    v1.15.3
+```
+
+
+#### The Routing Table
+
+- Print the internal IP address and Pod CIDR range for each worker instance:
+
+10.240.0.20 10.200.0.0/24
+10.240.0.21 10.200.1.0/24
+10.240.0.22 10.200.2.0/24
+```
+
+[x] Routes
+
+- Create network routes for each worker instance:
+
+```sh
+for i in 0 1 2; do
+  gcloud compute routes create kubernetes-route-10-200-${i}-0-24 \
+    --network kubernetes-the-hard-way \
+    --next-hop-address 10.240.0.2${i} \
+    --destination-range 10.200.${i}.0/24
+done
+-----------
+Created [https://www.googleapis.com/compute/v1/projects/docker-250311/global/routes/kubernetes-route-10-200-0-0-24].
+NAME                            NETWORK                  DEST_RANGE     NEXT_HOP     PRIORITY
+kubernetes-route-10-200-0-0-24  kubernetes-the-hard-way  10.200.0.0/24  10.240.0.20  1000
+Created [https://www.googleapis.com/compute/v1/projects/docker-250311/global/routes/kubernetes-route-10-200-1-0-24].
+NAME                            NETWORK                  DEST_RANGE     NEXT_HOP     PRIORITY
+kubernetes-route-10-200-1-0-24  kubernetes-the-hard-way  10.200.1.0/24  10.240.0.21  1000
+Created [https://www.googleapis.com/compute/v1/projects/docker-250311/global/routes/kubernetes-route-10-200-2-0-24].
+NAME                            NETWORK                  DEST_RANGE     NEXT_HOP     PRIORITY
+kubernetes-route-10-200-2-0-24  kubernetes-the-hard-way  10.200.2.0/24  10.240.0.22  1000
+=====================================================================================
+
+
+ > List the routes in the kubernetes-the-hard-way VPC network:
+--------------------------------------------------------------
+$ gcloud compute routes list --filter "network: kubernetes-the-hard-way"
+NAME                            NETWORK                  DEST_RANGE     NEXT_HOP                  PRIORITY
+default-route-7cd470abdb670dc5  kubernetes-the-hard-way  0.0.0.0/0      default-internet-gateway  1000
+default-route-d8ec0acb03d84d87  kubernetes-the-hard-way  10.240.0.0/24  kubernetes-the-hard-way   1000
+kubernetes-route-10-200-0-0-24  kubernetes-the-hard-way  10.200.0.0/24  10.240.0.20               1000
+kubernetes-route-10-200-1-0-24  kubernetes-the-hard-way  10.200.1.0/24  10.240.0.21               1000
+kubernetes-route-10-200-2-0-24  kubernetes-the-hard-way  10.200.2.0/24  10.240.0.22               1000
+```
+
+[x] The DNS Cluster Add-on
+
+- Deploy the coredns cluster add-on:
+
+```sh
+ $ kubectl apply -f https://storage.googleapis.com/kubernetes-the-hard-way/coredns.yaml
+serviceaccount/coredns created
+clusterrole.rbac.authorization.k8s.io/system:coredns created
+clusterrolebinding.rbac.authorization.k8s.io/system:coredns created
+configmap/coredns created
+deployment.apps/coredns created
+service/kube-dns created
+```
+
+- List the pods created by the kube-dns deployment:
+
+```sh
+$ kubectl get pods -l k8s-app=kube-dns -n kube-system
+NAME                     READY   STATUS    RESTARTS   AGE
+coredns-5fb99965-h9dwt   1/1     Running   0          2m18s
+coredns-5fb99965-p2rwn   1/1     Running   0          2m18s
+```
+
+## Verification
+
+- Create a busybox deployment:
+
+```sh
+kubectl run --generator=run-pod/v1 busybox --image=busybox:1.28 --command -- sleep 3600
+```
+
+- List the pod created by the busybox deployment:
+
+```sh
+$ kubectl get pods -l run=busybox
+NAME      READY   STATUS    RESTARTS   AGE
+busybox   1/1     Running   0          47s
+```
+
+- Retrieve the full name of the busybox pod:
+
+```sh
+POD_NAME=$(kubectl get pods -l run=busybox -o jsonpath="{.items[0].metadata.name}")
+
+$ kubectl exec -ti $POD_NAME -- nslookup kubernetes
+Server:    10.32.0.10
+Address 1: 10.32.0.10 kube-dns.kube-system.svc.cluster.local
+
+Name:      kubernetes
+Address 1: 10.32.0.1 kubernetes.default.svc.cluster.local
+```
+
+- Print a hexdump of the kubernetes-the-hard-way secret stored in etcd:
+
+```sh
+$ gcloud compute ssh controller-0 \
+>   --command "sudo ETCDCTL_API=3 etcdctl get \
+>   --endpoints=https://127.0.0.1:2379 \
+>   --cacert=/etc/etcd/ca.pem \
+>   --cert=/etc/etcd/kubernetes.pem \
+>   --key=/etc/etcd/kubernetes-key.pem\
+>   /registry/secrets/default/kubernetes-the-hard-way | hexdump -C"
+00000000  2f 72 65 67 69 73 74 72  79 2f 73 65 63 72 65 74  |/registry/secret|
+00000010  73 2f 64 65 66 61 75 6c  74 2f 6b 75 62 65 72 6e  |s/default/kubern|
+00000020  65 74 65 73 2d 74 68 65  2d 68 61 72 64 2d 77 61  |etes-the-hard-wa|
+00000030  79 0a 6b 38 73 3a 65 6e  63 3a 61 65 73 63 62 63  |y.k8s:enc:aescbc|
+00000040  3a 76 31 3a 6b 65 79 31  3a bf e7 55 f0 32 30 e3  |:v1:key1:..U.20.|
+00000050  15 82 e5 10 dd 1a bf 52  dc 86 c2 2e 94 28 27 f2  |.......R.....('.|
+00000060  88 82 e2 14 7d 51 99 39  21 69 dc cb 11 38 f5 53  |....}Q.9!i...8.S|
+00000070  94 b8 63 9e ed 71 09 a9  b3 3a 09 1a fe c7 58 79  |..c..q...:....Xy|
+00000080  59 64 d5 44 71 4b 7a ec  d9 73 d2 9e b8 f9 95 c8  |Yd.DqKz..s......|
+00000090  a0 ea 90 24 cb 35 b5 95  6e 48 57 e6 95 8b 09 4c  |...$.5..nHW....L|
+000000a0  b0 1b 44 7a c5 c9 9b 16  39 fc 52 02 67 b6 a2 dc  |..Dz....9.R.g...|
+000000b0  22 2c f2 27 f3 13 73 e0  63 97 d7 7f 2a 48 79 d6  |",.'..s.c...*Hy.|
+000000c0  09 ba df 4a e5 50 38 ef  26 1d 22 f7 93 7a 0d 91  |...J.P8.&."..z..|
+000000d0  a5 dd f9 61 e9 b2 75 17  3e db c8 09 a8 95 c1 03  |...a..u.>.......|
+000000e0  64 50 43 96 13 a1 c3 6b  a9 0a                    |dPC....k..|
+000000ea
+```
+
+The etcd key is prefixed with k8s:enc:aescbc:v1:key1, which indicates the aescbc provider was used to 
+encrypt the data with the key1 encryption key.
+
+- [x] Verify the ability to create and manage Deployments.
+
+- Create a deployment for the nginx web server:
+`kubectl create deployment nginx --image=nginx`
+
+- List the pod created by the nginx deployment:
+
+```sh
+$ kubectl get pods -l app=nginx
+NAME                     READY   STATUS    RESTARTS   AGE
+nginx-554b9c67f9-ttqvm   1/1     Running   0          15s
+```
+
+- [x] Port Forwarding
+
+```sh
+$ kubectl port-forward $POD_NAME 8080:80
+Forwarding from 127.0.0.1:8080 -> 80
+Forwarding from [::1]:8080 -> 80
+-->Handling connection for 8080 <--
+^C
+```
+
+ - at the same time in new terminal command output:
+
+```sh
+$ curl --head http://127.0.0.1:8080
+HTTP/1.1 200 OK                                                                             
+Server: nginx/1.17.3                                                                        
+Date: Wed, 18 Sep 2019 12:36:09 GMT                                                         
+Content-Type: text/html                                                                     
+Content-Length: 612                                                                         
+Last-Modified: Tue, 13 Aug 2019 08:50:00 GMT                                                
+Connection: keep-alive                                                                      
+ETag: "5d5279b8-264"                                                                        
+Accept-Ranges: bytes 
+```
+
+- [x] Logs
+
+- Print `pod` pod logs:
+
+```sh
+$ kubectl logs $POD_NAME
+127.0.0.1 - - [18/Sep/2019:12:36:09 +0000] "HEAD / HTTP/1.1" 200 0 "-" "curl/7.47.0" "-"
+```
+
+- [x] Exec
+
+- Print the nginx version by executing the nginx -v command in the nginx container:
+
+```sh
+$ kubectl exec -ti $POD_NAME -- nginx -v
+nginx version: nginx/1.17.3
+```
+
+ - [x] Services
+
+- Expose the nginx deployment using a NodePort service:
+
+```sh
+$ kubectl expose deployment nginx --port 80 --type NodePort
+
+$ NODE_PORT=$(kubectl get svc nginx \
+>   --output=jsonpath='{range .spec.ports[0]}{.nodePort}')
+ivbor@ivbor-nout ~/k8sthw $ gcloud compute firewall-rules create kubernetes-the-hard-way-allow-nginx-service \
+>   --allow=tcp:${NODE_PORT} \
+>   --network kubernetes-the-hard-way
+
+Creating firewall...⠏Created [https://www.googleapis.com/compute/v1/projects/docker-250311/global/firewalls/kubernetes-the-hard-way-allow-nginx-service].
+Creating firewall...done.                                                                      
+NAME                                         NETWORK                  DIRECTION  PRIORITY  ALLOW      DENY  DISABLED
+kubernetes-the-hard-way-allow-nginx-service  kubernetes-the-hard-way  INGRESS    1000      tcp:32543        False
+ivbor@ivbor-nout ~/k8sthw $ 
+ivbor@ivbor-nout ~/k8sthw $ EXTERNAL_IP=$(gcloud compute instances describe worker-0 \
+>   --format 'value(networkInterfaces[0].accessConfigs[0].natIP)')
+ivbor@ivbor-nout ~/k8sthw $ curl -I http://${EXTERNAL_IP}:${NODE_PORT}
+HTTP/1.1 200 OK
+Server: nginx/1.17.3
+Date: Wed, 18 Sep 2019 12:44:41 GMT
+Content-Type: text/html
+Content-Length: 612
+Last-Modified: Tue, 13 Aug 2019 08:50:00 GMT
+Connection: keep-alive
+ETag: "5d5279b8-264"
+Accept-Ranges: bytes
+```
+
+
+## Cleaning UP
+
+- [x] Compute Instances
+
+Delete the controller and worker compute instances:
+
+```sh
+gcloud -q compute instances delete \
+  controller-0 controller-1 controller-2 \
+  worker-0 worker-1 worker-2 \
+  --zone $(gcloud config get-value compute/zone)
+```
+
+ - [x] Networking
+
+- Delete the external load balancer network resources:
+
+```sh
+{
+  gcloud -q compute forwarding-rules delete kubernetes-forwarding-rule \
+    --region $(gcloud config get-value compute/region)
+
+  gcloud -q compute target-pools delete kubernetes-target-pool
+
+  gcloud -q compute http-health-checks delete kubernetes
+
+  gcloud -q compute addresses delete kubernetes-the-hard-way
+}
+```
+
+- Delete the kubernetes-the-hard-way firewall rules:
+
+```sh 
+gcloud -q compute firewall-rules delete \
+  kubernetes-the-hard-way-allow-nginx-service \
+  kubernetes-the-hard-way-allow-internal \
+  kubernetes-the-hard-way-allow-external \
+  kubernetes-the-hard-way-allow-health-check
+```
+
+- Delete the kubernetes-the-hard-way network VPC:
+
+```sh
+{
+  gcloud -q compute routes delete \
+    kubernetes-route-10-200-0-0-24 \
+    kubernetes-route-10-200-1-0-24 \
+    kubernetes-route-10-200-2-0-24
+
+  gcloud -q compute networks subnets delete kubernetes
+
+  gcloud -q compute networks delete kubernetes-the-hard-way
+}
+```
+
+Relative links:
+ - [kops - Kubernetes Operations](https://github.com/kubernetes/kops) - The easiest way to get a production grade Kubernetes cluster up and running.
+ - [Развертывание Kubernetes кластера при помощи Rancher 2.0](https://www.youtube.com/watch?v=3NX40K9D6tk)
+ - [Rancher 2.0](https://habr.com/ru/company/flant/blog/339120/)
+ - [Rancher 2.0 Tech preview](https://www.youtube.com/watch?v=Ma6FsuWI2Nc)
