@@ -20,5 +20,8 @@ spec:
         component: comment
     spec:
       containers:
-      - image: ivbdockerhub/comment:latest
+      - image: ivbdockerhub/comment
         name: comment
+        env:
+        - name: COMMENT_DATABASE_HOST
+          value: comment-db        
