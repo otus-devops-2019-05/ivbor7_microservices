@@ -1490,7 +1490,39 @@ Relative links:
 
 ## Homework #20
 
- - Run Minikube-cluster(one-node cluster): `$ minikube start`
+- [x] installed and checked the availability of [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/), [VirtualBox](https://www.virtualbox.org/wiki/Downloads), [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) on host.
+
+Examples:
+  # Delete a pod using the type and name specified in pod.json.
+  kubectl delete -f ./pod.json
+  
+  # Delete resources from a directory containing kustomization.yaml - e.g.
+dir/kustomization.yaml.
+  kubectl delete -k dir
+  
+  # Delete a pod based on the type and name in the JSON passed into stdin.
+  cat pod.json | kubectl delete -f -
+  
+  # Delete pods and services with same names "baz" and "foo"
+  kubectl delete pod,service baz foo
+  
+  # Delete pods and services with label name=myLabel.
+  kubectl delete pods,services -l name=myLabel
+  
+  # Delete a pod with minimal delay
+  kubectl delete pod foo --now
+  
+  # Force delete a pod on a dead node
+  kubectl delete pod foo --grace-period=0 --force
+  
+  # Delete all pods
+  kubectl delete pods --all
+  # 
+kubectl delete deployment --cascade=true --all=true
+
+
+
+- Run Minikube-cluster(one-node cluster): `$ minikube start`
 While the minicube was bringing up the kubctl config file ~/.kube/config was configured.
 ~/.kube/config - it's a place where cluster's context (user, cluster, namespace) is stored. It's also known as a kubernetes manifest. To run the application in kubernetes the target applicatio state should be described via CLI or in yaml-file called manifest.
 Key section in context: 
@@ -1501,7 +1533,10 @@ Key section in context:
    - _name_ - the name for identification in config
  _namespace_ - visibility area (not mandatory)
 
- - Getting info about nodes: 
+To run kubernetes of certain version use flag --kubernetes-version <version> (v1.8.0)
+As default hypervisor the VirtualBox is used, but you can use other hypervisor specify option --vm-driver=<hypervisor>
+
+- Getting info about nodes: 
 
 ```sh
 $ kubectl get nodes                                          
@@ -1522,9 +1557,8 @@ $ kubectl config set-context context_name \
 
 4. Use the context: `$ kubectl config use-context context_name`
 
- - get the current context: `$ kubectl config current-context`
-
- - get the list of contexts: 
+- get the current context: `$ kubectl config current-context`
+- get the list of contexts: 
 
 ```sh 
 $ kubectl config get-contexts                                
@@ -1532,16 +1566,330 @@ CURRENT   NAME                      CLUSTER                   AUTHINFO   NAMESPA
           kubernetes-the-hard-way   kubernetes-the-hard-way   admin      
 *         minikube                  minikube                  minikube
 ```
+- run ui component:
+
+```sh
+$ kubectl apply -f ui-deployment.yml 
+deployment.apps/ui created
+$ kubectl get deployment
+NAME   READY   UP-TO-DATE   AVAILABLE   AGE
+ui     0/3     3            0           107s
+```
+
+- delete ui component: 
+
+```sh
+$ kubectl delete -f ui-deployment.yml 
+deployment.apps "ui-deployment" deleted
+or 
+$ kubectl delete service ui
+```
+
+- get the addons list:
+
+```sh
+
+ivbor@ivbor-nout ~/Otus/ivbor7_microservices/kubernetes/reddit $ minikube addons list
+- addon-manager: enabled
+- dashboard: disabled
+- default-storageclass: enabled
+- efk: disabled
+- freshpod: disabled
+- gvisor: disabled
+- heapster: disabled
+- ingress: disabled
+- logviewer: disabled
+- metrics-server: disabled
+- nvidia-driver-installer: disabled
+- nvidia-gpu-device-plugin: disabled
+- registry: disabled
+- registry-creds: disabled
+- storage-provisioner: enabled
+- storage-provisioner-gluster: disabled
+```
+
+- enable the dashboard addons: `minikube addons enable dashboard`
+- looking for ip:port of dashboard:
+`kubectl get svc --namespace=kube-system`
+or `kubectl get all -n kube-system --selector k8s-app=kubernetes-dashboard`
+- run the dashboard:
+`$ minikube service kubernetes-dashboard -n kube-system`
+in my case it was: `minikube dashboard`
+
+- get information about running services:
+
+```sh
+$ kubectl get svc --namespace=kube-system
+NAME                   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                  AGE
+kube-dns               ClusterIP   10.96.0.10      <none>        53/UDP,53/TCP,9153/TCP   6h16m
+kubernetes-dashboard   ClusterIP   10.107.54.145   <none>        80/TCP                   16m
+
+ $ kubectl get svc -A
+NAMESPACE     NAME                   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                  AGE
+default       comment                ClusterIP   10.108.131.239   <none>        9292/TCP                 7h56m
+default       comment-db             ClusterIP   10.99.231.69     <none>        27017/TCP                7h56m
+default       kubernetes             ClusterIP   10.96.0.1        <none>        443/TCP                  7h58m
+default       post                   ClusterIP   10.98.64.24      <none>        5000/TCP                 7h56m
+default       post-db                ClusterIP   10.97.211.168    <none>        27017/TCP                7h56m
+default       ui                     NodePort    10.105.215.8     <none>        9292:32092/TCP           161m
+dev           comment                ClusterIP   10.110.208.1     <none>        9292/TCP                 21m
+dev           comment-db             ClusterIP   10.102.71.101    <none>        27017/TCP                21m
+dev           mongodb                ClusterIP   10.107.85.27     <none>        27017/TCP                21m
+dev           post                   ClusterIP   10.96.44.13      <none>        5000/TCP                 21m
+dev           post-db                ClusterIP   10.96.164.170    <none>        27017/TCP                21m
+dev           ui                     ClusterIP   10.111.175.117   <none>        9292/TCP                 20m
+kube-system   kube-dns               ClusterIP   10.96.0.10       <none>        53/UDP,53/TCP,9153/TCP   7h58m
+kube-system   kubernetes-dashboard   ClusterIP   10.107.54.145    <none>        80/TCP                   118m
+
+Possible resources include (case insensitive):
+
+pod (po), service (svc), replicationcontroller (rc), deployment (deploy), replicaset (rs)
+```
 
 
 
 
+```sh
+$ minikube dashboard
+* Verifying dashboard health ...
+* Launching proxy ...
+* Verifying proxy health ...
+* Opening http://127.0.0.1:40101/api/v1/namespaces/kube-system/services/http:kubernetes-dashboard:/proxy/ in your default browser...
+```
 
-(kubernetes-2 branch)
 
-- Развернуть локальное окружение для работы с
-Kubernetes
-• Развернуть Kubernetes в GKE
-• Запустить reddit в Kubernetes
+To access Reddit application from outside we need to adjust the network. Forward application 9292 port to host 8080 port:
 
- - [x] installed and checked the presence of [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/), [VirtualBox](https://www.virtualbox.org/wiki/Downloads), [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
+```sh
+kubectl get pods --selector component=ui
+kubectl port-forward <pod-name> 8080:9292
+```
+
+Error arised:
+
+```sh
+kubectl get pods --all-namespaces
+NAMESPACE     NAME                               READY   STATUS                 RESTARTS   AGE
+default       comment-6c58c4f89-9dprq            0/1     ImagePullBackOff       0          5m20s
+default       comment-6c58c4f89-l8pzn            0/1     ImagePullBackOff       0          5m20s
+default       comment-6c58c4f89-v69zk            0/1     ImagePullBackOff       0          5m20s
+```
+
+[Kubernetes Troubleshooting](https://managedkube.com/kubernetes/k8sbot/troubleshooting/imagepullbackoff/2019/02/23/imagepullbackoff.html):
+
+```sh
+$ kubectl describe pod comment-6c58c4f89-9dprq
+Name:           comment-6c58c4f89-9dprq
+Namespace:      default
+Priority:       0
+Node:           minikube/10.0.2.15
+Start Time:     Fri, 20 Sep 2019 23:20:44 +0300
+Labels:         app=reddit
+                component=comment
+                pod-template-hash=6c58c4f89
+. . .
+Warning  Failed     8m14s                 kubelet, minikube  Failed to pull image "ivbdockerhub/comment": rpc error: code = Unknown desc = Error response from daemon: Get https://registry-1.docker.io/v2/: dial tcp: lookup registry-1.docker.io on 10.0.2.3:53: read udp 10.0.2.15:46194->10.0.2.3:53: i/o timeout
+  Normal   BackOff    5m43s (x15 over 10m)  kubelet, minikube  Back-off pulling image "ivbdockerhub/comment"
+  Warning  Failed     43s (x37 over 10m)    kubelet, minikube  Error: ImagePullBackOff
+```
+
+We need an access to dockerhub registry. 
+Fix: point your docker client to the VM's docker daemon by running:
+`eval $(minikube docker-env)` or [Creating a Secret with Docker Config](https://kubernetes.io/docs/concepts/containers/images/#creating-a-secret-with-a-docker-config)
+
+One more error occurred after rebooting the PC:
+
+```sh
+> $ kubectl get nodes
+> error: You must be logged in to the server (Unauthorized)
+> $ kubectl config view --minify | grep /.minikube | xargs stat
+> stat: cannot stat 'certificate-authority:': No such file or directory
+>  File: '/home/ivbor/.minikube/ca.crt'
+> ...
+```
+
+Fix: 
+ - delete the cluster using `minikube delete`
+ - Clear everything from the config:
+
+```sh
+kubectl config delete-context minikube
+kubectl config delete-cluster minikube
+kubectl config unset.users minikube
+rm -rf ~/.kube/config
+rm -rf ~/.minikube
+```
+
+- cascade the deletion of the resources managed by this resource (e.g. Pods created by a ReplicationController)
+
+```sh
+$ kubectl delete deployment --cascade=true --all=true
+deployment.extensions "comment-deployment" deleted
+deployment.extensions "post-deployment" deleted
+```
+
+ But that wasn't enough, nothing has helped. I've noticed that minikube was installed with root privileges: `sudo install minikube /usr/local/bin` and certificetes was generated by user ivbor:
+
+```sh
+ls -al /usr/local/bin/
+total 273348
+drwxr-xr-x  2 root  root       4096 Sep 21 22:07 .
+drwxr-xr-x 10 root  root       4096 Nov 24  2017 ..
+-rwxr-xr-x  1 root  root       6536 Feb  7  2019 apt
+--> -rwxrwxr-x  1 ivbor ivbor  20574840 Sep 15 20:50 cfssl
+--> -rwxrwxr-x  1 ivbor ivbor  12670032 Sep 15 20:51 cfssljson
+-rwxr-xr-x  1 root  root   16168192 Aug 24 23:19 docker-compose
+-rwxr-xr-x  1 root  root   28164576 Aug 19 15:00 docker-machine
+-rwxr-xr-x  1 root  root        535 Jun 29 10:27 gnome-help
+-rwxr-xr-x  1 root  root        196 Feb  7  2019 highlight
+-rwxr-xr-x  1 root  root        498 Aug 19 10:03 launchy
+--> -rwxrwxr-x  1 root  root   55869264 Sep 19 16:20 minikube
+```
+
+So, I've aligned the privileges of these binaries, recreated the cluster and have got an access to it.
+
+ - hearth labels set for pods identification within the cluster:
+
+```yml
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: ui
+>>labels:
+>>  app: reddit
+>>  component: ui
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+>>    app: reddit
+>>    component: ui
+  template:
+    metadata:
+      name: ui-pod
+>>    labels:
+>>      app: reddit
+>>      component: ui
+    spec:
+      containers:
+      - image: ivbdockerhub/ui:latest
+        name: ui
+```
+ 
+- mount the standard volume to store the data outside the container: 
+
+```yml
+...
+spec:
+      containers:
+      - image: mongo:3.2
+        name: mongo
+        volumeMounts:
+        - name: mongo-persistent-storage
+          mountPath: /data/db
+      volumes:
+      - name: mongo-persistent-storage
+        emptyDir: {}
+```
+
+- create the Service abstraction that describes the way of microservices interaction and as a policy by which to access the appropriate microservices within the cluster:
+
+```sh
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: comment
+  labels:
+    app: reddit
+    component: comment
+spec:
+  ports:
+  - port: 9292
+    protocol: TCP
+    targetPort: 9292
+  selector:
+    app: reddit
+    component: comment
+```
+
+- Pods have to be found by given labels:
+
+```sh
+$ kubectl describe service comment | grep Endpoints`
+Endpoints:         172.17.0.4:9292,172.17.0.5:9292,172.17.0.6:9292
+```
+
+- point the external port to access the application from outside using type NodePort instead of default ClusterIP type:
+
+```yml
+spec:
+  type: NodePort
+  ports:
+  - nodePort: 32092
+    port: 9292
+. . .
+```
+
+$ kubectl exec -ti <pod-name> nslookup comment
+nslookup: can't resolve '(null)': Name does not resolve
+
+```sh
+$ minikube service list
+|-------------|------------|-----------------------------|
+|  NAMESPACE  |    NAME    |             URL             |
+|-------------|------------|-----------------------------|
+| default     | comment    | No node port                |
+| default     | comment-db | No node port                |
+| default     | kubernetes | No node port                |
+| default     | post       | No node port                |
+| default     | post-db    | No node port                |
+| default     | ui         | http://192.168.99.100:32092 |
+| kube-system | kube-dns   | No node port                |
+```
+
+- add information about environment to ui-deployment.yml:
+
+```yml
+    ...
+    spec:
+      containers:
+      - image: chromko/ui
+        name: ui
+        env:
+        - name: ENV
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+```
+
+- add new namespace "dev" and run our reddit application in new namespace, changed the NodePort beforehand in order to resolve port conflict:
+
+```sh
+kubectl apply -f ui-service.yml -n dev
+service/ui configured
+
+$ kubectl get svc -A
+NAMESPACE     NAME                   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                  AGE
+default       comment                ClusterIP   10.108.131.239   <none>        9292/TCP                 8h
+default       comment-db             ClusterIP   10.99.231.69     <none>        27017/TCP                8h
+default       kubernetes             ClusterIP   10.96.0.1        <none>        443/TCP                  8h
+default       post                   ClusterIP   10.98.64.24      <none>        5000/TCP                 8h
+default       post-db                ClusterIP   10.97.211.168    <none>        27017/TCP                8h
+--> default   ui                     NodePort    10.105.215.8     <none>        9292:32092/TCP           173m
+dev           comment                ClusterIP   10.110.208.1     <none>        9292/TCP                 34m
+dev           comment-db             ClusterIP   10.102.71.101    <none>        27017/TCP                34m
+dev           mongodb                ClusterIP   10.107.85.27     <none>        27017/TCP                34m
+dev           post                   ClusterIP   10.96.44.13      <none>        5000/TCP                 34m
+dev           post-db                ClusterIP   10.96.164.170    <none>        27017/TCP                34m
+-->dev        ui                     NodePort    10.111.175.117   <none>        9292:31092/TCP           33m
+kube-system   kube-dns               ClusterIP   10.96.0.10       <none>        53/UDP,53/TCP,9153/TCP   8h
+kube-system   kubernetes-dashboard   ClusterIP   10.107.54.145    <none>        80/TCP                   130m
+```
+
+
+Relative links: 
+1. [KIND - Kubernetes IN Docker - local clusters for testing Kubernetes](https://github.com/kubernetes-sigs/kind)
+2. [10 Most Common Reasons Kubernetes Deployments Fail](https://kukulinski.com/10-most-common-reasons-kubernetes-deployments-fail-part-1/)
+3. [Getting Started strong](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#-strong-getting-started-strong-)
