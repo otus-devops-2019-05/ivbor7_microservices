@@ -3,9 +3,9 @@ ivbor7 microservices repository
 
 ## Table of Contents:
 
-- [HW#12 (docker-2): branch: TravisCI, Docker, Docker-compose](./#-homework-#12)
-- [HW#13 (docker-3): branch: Microservices](./#-homework-#13)
-- [HW#14 (docker-4): Docker network](#-homework-#14)
+- [HW#12 (docker-2): branch: TravisCI, Docker, Docker-compose](./kubernetes-2#-homework-#12)
+- [HW#13 (docker-3): branch: Microservices](./kubernetes-2#-homework-#13)
+- [HW#14 (docker-4): Docker network](https://github.com/otus-devops-2019-05/ivbor7_microservices/edit/kubernetes-2#-homework-#14)
 - [HW#15 (docker-5) GitlabCI arrangement](#-homework-#15)
 - [HW#16 (monitoring-1): Introduction to monitoring systems](#-homework-#16)
 - [HW#17 (monitoring-2): Application and Infrastructure monitoring](#-homework-#17)
