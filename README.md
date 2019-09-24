@@ -3,15 +3,15 @@ ivbor7 microservices repository
 
 ## Table of Contents:
 
-- [HW#12 (docker-2): branch: TravisCI, Docker, Docker-compose](./README.md#homework-#12)
+- [HW#12 (docker-2): branch: TravisCI, Docker, Docker-compose](./README.md#homework-12)
 - [HW#13 (docker-3): branch: Microservices](./README.md#homework-13)
-- [HW#14 (docker-4): Docker network](https://github.com/otus-devops-2019-05/ivbor7_microservices/blob/kubernetes-2/README.md#homework-14)
-- [HW#15 (docker-5) GitlabCI arrangement](#-homework-#15)
-- [HW#16 (monitoring-1): Introduction to monitoring systems](#-homework-#16)
-- [HW#17 (monitoring-2): Application and Infrastructure monitoring](#-homework-#17)
-- [HW#18 (logging-1): Logging and disributed tracing](#-homework-#18)
-- [HW#19 (kubernetes-1): Introduction to Kubernetes](#-homework-#19)
-- [HW#20 (kubernetes-2): Launch Cluster, Application. Security Model](#-homework-#20)
+- [HW#14 (docker-4): Docker network](./README.md#homework-14)
+- [HW#15 (docker-5) GitlabCI arrangement](./README.md#homework-15)
+- [HW#16 (monitoring-1): Introduction to monitoring systems](./README.md#homework-16)
+- [HW#17 (monitoring-2): Application and Infrastructure monitoring](./README.md#homework-17)
+- [HW#18 (logging-1): Logging and disributed tracing](./README.md#homework-18)
+- [HW#19 (kubernetes-1): Introduction to Kubernetes](./README.md#homework-19)
+- [HW#20 (kubernetes-2): Launch Cluster, Application. Security Model](./README.md#homework-20)
 
 
 #### Homework #12
