@@ -11,6 +11,7 @@ ivbor7 microservices repository
 - [HW#17 (monitoring-2): Application and Infrastructure monitoring](#-homework-#17)
 - [HW#18 (logging-1): Logging and disributed tracing](#-homework-#18)
 - [HW#19 (kubernetes-1): Introduction to Kubernetes](#-homework-#19)
+- [HW#20 (kubernetes-2): Launch Cluster, Application. Security Model](#-homework-#20)
 
 
 #### Homework #12
