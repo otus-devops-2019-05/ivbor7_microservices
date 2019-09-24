@@ -1481,46 +1481,19 @@ gcloud -q compute firewall-rules delete \
 ```
 
 Relative links:
- - [kops - Kubernetes Operations](https://github.com/kubernetes/kops) - The easiest way to get a production grade Kubernetes cluster up and running.
- - [Развертывание Kubernetes кластера при помощи Rancher 2.0](https://www.youtube.com/watch?v=3NX40K9D6tk)
- - [Rancher 2.0](https://habr.com/ru/company/flant/blog/339120/)
- - [Rancher 2.0 Tech preview](https://www.youtube.com/watch?v=Ma6FsuWI2Nc)
-
+1. [kops - Kubernetes Operations](https://github.com/kubernetes/kops) - The easiest way to get a production grade Kubernetes cluster up and running.
+2. [Развертывание Kubernetes кластера при помощи Rancher 2.0](https://www.youtube.com/watch?v=3NX40K9D6tk)
+3. [Rancher 2.0](https://habr.com/ru/company/flant/blog/339120/)
+4. [Rancher 2.0 Tech preview](https://www.youtube.com/watch?v=Ma6FsuWI2Nc)
+5. [Provisioning Kubernetes using Terraform and Ansible - Sample](https://github.com/opencredo/k8s-terraform-ansible-sample)
+6. [Kubernetes from scratch to AWS with Terraform and Ansible 3 parts](https://opencredo.com/blogs/kubernetes-aws-terraform-ansible-1/)
+7. [Kubernetes Architecture](https://www.padok.fr/en/blog/kubernetes-architecture-clusters)
+8. [Kubernetes configuration & Best Practices](https://bcouetil.gitlab.io/academy/BP-kubernetes.html)
 
 
 ## Homework #20
 
 - [x] installed and checked the availability of [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/), [VirtualBox](https://www.virtualbox.org/wiki/Downloads), [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) on host.
-
-Examples:
-  # Delete a pod using the type and name specified in pod.json.
-  kubectl delete -f ./pod.json
-  
-  # Delete resources from a directory containing kustomization.yaml - e.g.
-dir/kustomization.yaml.
-  kubectl delete -k dir
-  
-  # Delete a pod based on the type and name in the JSON passed into stdin.
-  cat pod.json | kubectl delete -f -
-  
-  # Delete pods and services with same names "baz" and "foo"
-  kubectl delete pod,service baz foo
-  
-  # Delete pods and services with label name=myLabel.
-  kubectl delete pods,services -l name=myLabel
-  
-  # Delete a pod with minimal delay
-  kubectl delete pod foo --now
-  
-  # Force delete a pod on a dead node
-  kubectl delete pod foo --grace-period=0 --force
-  
-  # Delete all pods
-  kubectl delete pods --all
-  # 
-kubectl delete deployment --cascade=true --all=true
-
-
 
 - Run Minikube-cluster(one-node cluster): `$ minikube start`
 While the minicube was bringing up the kubctl config file ~/.kube/config was configured.
@@ -1585,7 +1558,7 @@ or
 $ kubectl delete service ui
 ```
 
-- get the addons list:
+- Get the addons list:
 
 ```sh
 
@@ -1646,9 +1619,6 @@ Possible resources include (case insensitive):
 pod (po), service (svc), replicationcontroller (rc), deployment (deploy), replicaset (rs)
 ```
 
-
-
-
 ```sh
 $ minikube dashboard
 * Verifying dashboard health ...
@@ -1693,7 +1663,6 @@ Warning  Failed     8m14s                 kubelet, minikube  Failed to pull imag
   Warning  Failed     43s (x37 over 10m)    kubelet, minikube  Error: ImagePullBackOff
 ```
 
-We need an access to dockerhub registry. 
 Fix: point your docker client to the VM's docker daemon by running:
 `eval $(minikube docker-env)` or [Creating a Secret with Docker Config](https://kubernetes.io/docs/concepts/containers/images/#creating-a-secret-with-a-docker-config)
 
@@ -1748,7 +1717,10 @@ drwxr-xr-x 10 root  root       4096 Nov 24  2017 ..
 
 So, I've aligned the privileges of these binaries, recreated the cluster and have got an access to it.
 
- - hearth labels set for pods identification within the cluster:
+It's happened again, containers do not start, the cluster stops responding and VM is getting stuck. 
+Increasing memory allocated to the VM fixed the problem: `$ minikube config set memory 6000`
+
+- point the labels for pods identification within the cluster:
 
 ```yml
 ---
@@ -1795,7 +1767,7 @@ spec:
 
 - create the Service abstraction that describes the way of microservices interaction and as a policy by which to access the appropriate microservices within the cluster:
 
-```sh
+```yml
 ---
 apiVersion: v1
 kind: Service
@@ -1888,8 +1860,123 @@ kube-system   kube-dns               ClusterIP   10.96.0.10       <none>        
 kube-system   kubernetes-dashboard   ClusterIP   10.107.54.145    <none>        80/TCP                   130m
 ```
 
+After checking if everything work well locally, we are ready to deploy our application on Google Kubernetes Engine.
+Create Kubernetes Cluster :
+
+- management components are running in Container Engine:
+  - kube-apiserver
+  - kube-scheduler
+  - kube-controller-manager
+  - etcd
+- workloads are running on work nodes, they are standard nodes of the Google compute engine
+  - addons
+  - monitoring
+  - logging
+  - ingress backend
+  - runtimes
+
+Before proceeding with the deploy of the application we need to connect to our cluster in GKE:
+
+```sh
+$ gcloud container clusters get-credentials standard-cluster-1 --zone us-central1-a --project docker-250311
+Fetching cluster endpoint and auth data.
+kubeconfig entry generated for standard-cluster-1.
+```
+
+As a result the user, cluster and context will be added into ~/.kube/config it can be checked running the command:
+
+```sh
+$ kubectl config current-context
+gke_docker-250311_us-central1-a_standard-cluster-1
+```
+
+Now create the Dev namespace: 
+
+```sh
+$ kubectl apply -f ./kubernetes/reddit/dev-namespace.yml 
+namespace/dev created
+```
+
+then deploy all components of the Reddit application in namespace dev:
+
+```sh
+$ kubectl apply -f ./kubernetes/reddit/ -n dev
+deployment.apps/comment created
+service/comment-db created
+service/comment created
+namespace/dev unchanged
+deployment.apps/mongo created
+service/mongodb created
+deployment.apps/post created
+service/post-db created
+service/post created
+deployment.apps/ui created
+service/ui created
+```
+
+Get External IP of cluster nodes:
+
+```sh
+$ kubectl get nodes -o wide
+NAME                                                STATUS   ROLES    AGE   VERSION         INTERNAL-IP   EXTERNAL-IP    OS-IMAGE                             KERNEL-VERSION   CONTAINER-RUNTIME
+gke-standard-cluster-1-default-pool-75430a20-1xdk   Ready    <none>   16m   v1.13.7-gke.8   10.128.0.16   35.202.251.2   Container-Optimized OS from Google   4.14.127+        docker://18.9.3
+gke-standard-cluster-1-default-pool-75430a20-cwl7   Ready    <none>   16m   v1.13.7-gke.8   10.128.0.15   34.66.62.2     Container-Optimized OS from Google   4.14.127+        docker://18.9.3
+```
+
+Look for the exposed port UI service: `$ kubectl describe service ui -n dev | grep -i nodeport`
+
+```sh
+ $ kubectl describe service ui -n dev | grep -i nodeport
+Type:                     NodePort
+NodePort:                 <unset>  31092/TCP
+```
+
+Now we can connect to our application by the link http://<node-ip>:<NodePort>
+
+- [x] Add the [Kubernetes Dashboard](https://github.com/kubernetes/dashboard) by enabling it in the cluster's Add-ons of the cluster properties.
+Run proxy: `$ kubectl proxy`: > "Starting to serve on 127.0.0.1:8001" 
+According to [Kubernetes Dashboard Web UI for k8s clusters](https://github.com/kubernetes/dashboard) run this link: http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/
+
+However we can't access the service due to RBAC limitations. So, we should add cluster-admin role to kubernetes-dashboard service account using clusterrolebinding:
+
+```sh
+kubectl create clusterrolebinding kubernetes-dashboard \
+--clusterrole=cluster-admin \
+--serviceaccount=kube-system:kubernetes-dashboard
+```
+
+Commands below allow to edit or take token for service-account:
+
+```sh
+$ gcloud container clusters get-credentials standard-cluster-1 --zone us-central1-a --project docker-250311 \
+&& kubectl edit secret default-token-szvgq --namespace dev
+
+$ gcloud container clusters get-credentials standard-cluster-1 --zone us-central1-a --project docker-250311 \
+&& kubectl edit secret kubernetes-dashboard-token-jms2n --namespace dev
+```
+
+Gaining access to the cluster that is now created with the commands available is quick. The two commands execute as shown:
+`gcloud container clusters get-credentials <account> --zone <us-west1-a> --project <project_name>`
+and then:
+`kubectl proxy`
+
+As a workaround we can [skip the login process](https://devblogs.microsoft.com/premier-developer/bypassing-authentication-for-the-local-kubernetes-cluster-dashboard/), of course it can be applied only for the local cluster. So, add the following arguments in kubernetes-dashboard.yml:
+
+```yml
+--enable-skip-login
+--disable-settings-authorizer
+```
+
+
+- [x] Extra task with (*): deploy Kubernetes cluster in GKE using Terraform. Create yaml-manifests for entities responsible for access to dashboard. 
+As for dashboard yaml-manifests, thanks to google, original github [Kubernetes/dashboard](https://github.com/kubernetes/dashboard/blob/master/aio/test-resources/kubernetes-dashboard-local.yaml), ["The Kubernetes Authors"](https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml) and  also to [followers](https://github.com/rootsongjc/kubernetes-handbook/blob/master/manifests/dashboard-1.7.1/kubernetes-dashboard.yaml), everything is done before us.
+
+
+
 
 Relative links: 
 1. [KIND - Kubernetes IN Docker - local clusters for testing Kubernetes](https://github.com/kubernetes-sigs/kind)
 2. [10 Most Common Reasons Kubernetes Deployments Fail](https://kukulinski.com/10-most-common-reasons-kubernetes-deployments-fail-part-1/)
 3. [Getting Started strong](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#-strong-getting-started-strong-)
+4. [Infrastructure as Code Examples](https://github.com/hashicorp/terraform-guides/tree/master/infrastructure-as-code)
+5. [Kubernetes on Google Cloud Platform](https://www.padok.fr/en/blog/kubernetes-google-cloud-terraform-cluster)
