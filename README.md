@@ -3,14 +3,15 @@ ivbor7 microservices repository
 
 ## Table of Contents:
 
-- [HW#12 (docker-2): branch: TravisCI, Docker, Docker-compose](#-homework-#12)
-- [HW#13 (docker-3): branch: Microservices](#-homework-#13)
-- [HW#14 (docker-4): Docker network](#-homework-#14)
-- [HW#15 (docker-5) GitlabCI arrangement](#-homework-#15)
-- [HW#16 (monitoring-1): Introduction to monitoring systems](#-homework-#16)
-- [HW#17 (monitoring-2): Application and Infrastructure monitoring](#-homework-#17)
-- [HW#18 (logging-1): Logging and disributed tracing](#-homework-#18)
-- [HW#19 (kubernetes-1): Introduction to Kubernetes](#-homework-#19)
+- [HW#12 (docker-2): branch: TravisCI, Docker, Docker-compose](./README.md#homework-12)
+- [HW#13 (docker-3): branch: Microservices](./README.md#homework-13)
+- [HW#14 (docker-4): Docker network](./README.md#homework-14)
+- [HW#15 (docker-5) GitlabCI arrangement](./README.md#homework-15)
+- [HW#16 (monitoring-1): Introduction to monitoring systems](./README.md#homework-16)
+- [HW#17 (monitoring-2): Application and Infrastructure monitoring](./README.md#homework-17)
+- [HW#18 (logging-1): Logging and disributed tracing](./README.md#homework-18)
+- [HW#19 (kubernetes-1): Introduction to Kubernetes](./README.md#homework-19)
+- [HW#20 (kubernetes-2): Launch Cluster, Application. Security Model](./README.md#homework-20)
 
 
 #### Homework #12
@@ -820,7 +821,7 @@ All generated images were pushed to the [Docker regestry](https://cloud.docker.c
 
 #### with (*):
 - [x] - Update Makefile. Add working with images for monitoring services 
-- [x] - Add experimental feature that allows the [Docker metrics to be exported](https://docs.docker.com/config/thirdparty/prometheus/) using the Prometheus syntax. See an example [how to collect Docker daemon metrics](https://ops.tips/gists/how-to-collect-docker-daemon-metrics/) You can try to integrate the docker metrics locally on Docker-machine or with help [Katatcoda browser based hands on lab](https://www.katacoda.com/courses/prometheus/docker-metrics). In case of GCP, once running the instance with docker onboard, connect to the docker host via ssh `docker-machine ssh docker-host` and take the following steps:
+- [x] - Add experimental feature that allows the [Docker metrics to be exported](https://docs.docker.com/config/thirdparty/prometheus/) using the Prometheus syntax. See an example [how to collect Docker daemon metrics](https://ops.tips/gists/how-to-collect-docker-daemon-metrics/) You can try to integrate the docker metrics locally on Docker-machine or with help [Katacoda browser based hands on lab](https://www.katacoda.com/courses/prometheus/docker-metrics). In case of GCP, once running the instance with docker onboard, connect to the docker host via ssh `docker-machine ssh docker-host` and take the following steps:
 
  1. The command below will update the systemd configuration used to start Docker to set the flags when the daemon starts and then restarts Docker.
 
@@ -1481,7 +1482,502 @@ gcloud -q compute firewall-rules delete \
 ```
 
 Relative links:
- - [kops - Kubernetes Operations](https://github.com/kubernetes/kops) - The easiest way to get a production grade Kubernetes cluster up and running.
- - [Развертывание Kubernetes кластера при помощи Rancher 2.0](https://www.youtube.com/watch?v=3NX40K9D6tk)
- - [Rancher 2.0](https://habr.com/ru/company/flant/blog/339120/)
- - [Rancher 2.0 Tech preview](https://www.youtube.com/watch?v=Ma6FsuWI2Nc)
+1. [kops - Kubernetes Operations](https://github.com/kubernetes/kops) - The easiest way to get a production grade Kubernetes cluster up and running.
+2. [Развертывание Kubernetes кластера при помощи Rancher 2.0](https://www.youtube.com/watch?v=3NX40K9D6tk)
+3. [Rancher 2.0](https://habr.com/ru/company/flant/blog/339120/)
+4. [Rancher 2.0 Tech preview](https://www.youtube.com/watch?v=Ma6FsuWI2Nc)
+5. [Provisioning Kubernetes using Terraform and Ansible - Sample](https://github.com/opencredo/k8s-terraform-ansible-sample)
+6. [Kubernetes from scratch to AWS with Terraform and Ansible 3 parts](https://opencredo.com/blogs/kubernetes-aws-terraform-ansible-1/)
+7. [Kubernetes Architecture](https://www.padok.fr/en/blog/kubernetes-architecture-clusters)
+8. [Kubernetes configuration & Best Practices](https://bcouetil.gitlab.io/academy/BP-kubernetes.html)
+
+
+## Homework #20
+
+- [x] installed and checked the availability of [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/), [VirtualBox](https://www.virtualbox.org/wiki/Downloads), [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) on host.
+
+- Run Minikube-cluster(one-node cluster): `$ minikube start`
+While the minicube was bringing up the kubctl config file ~/.kube/config was configured.
+~/.kube/config - it's a place where cluster's context (user, cluster, namespace) is stored. It's also known as a kubernetes manifest. To run the application in kubernetes the target applicatio state should be described via CLI or in yaml-file called manifest.
+Key section in context: 
+ _user_ - username for connection to cluster
+ _cluster_ - API server:
+   - _server_ - kubernetes API server address 
+   - _ certificate-authority_ - the root certificate the SSL-certificate on server itself is signed with
+   - _name_ - the name for identification in config
+ _namespace_ - visibility area (not mandatory)
+
+To run kubernetes of certain version use flag --kubernetes-version <version> (v1.8.0)
+As default hypervisor the VirtualBox is used, but you can use other hypervisor specify option --vm-driver=<hypervisor>
+
+- Getting info about nodes: 
+
+```sh
+$ kubectl get nodes                                          
+NAME       STATUS   ROLES    AGE     VERSION                                                    
+minikube   Ready    <none>   6m59s   v1.15.2
+```
+
+The usual cluster setup order is as follow. In such way the kubctl is configured for connection to certain cluster:
+1. Create cluster : `$ kubectl config set-cluster ... cluster_name`
+2. Create user credentials: `$ kubectl config set-credentials ... user_name`
+3. Create a context: 
+
+```sh
+$ kubectl config set-context context_name \
+--cluster=cluster_name \
+--user=user_name
+```
+
+4. Use the context: `$ kubectl config use-context context_name`
+
+- get the current context: `$ kubectl config current-context`
+- get the list of contexts: 
+
+```sh 
+$ kubectl config get-contexts                                
+CURRENT   NAME                      CLUSTER                   AUTHINFO   NAMESPACE              
+          kubernetes-the-hard-way   kubernetes-the-hard-way   admin      
+*         minikube                  minikube                  minikube
+```
+- run ui component:
+
+```sh
+$ kubectl apply -f ui-deployment.yml 
+deployment.apps/ui created
+$ kubectl get deployment
+NAME   READY   UP-TO-DATE   AVAILABLE   AGE
+ui     0/3     3            0           107s
+```
+
+- delete ui component: 
+
+```sh
+$ kubectl delete -f ui-deployment.yml 
+deployment.apps "ui-deployment" deleted
+or 
+$ kubectl delete service ui
+```
+
+- Get the addons list:
+
+```sh
+
+ivbor@ivbor-nout ~/Otus/ivbor7_microservices/kubernetes/reddit $ minikube addons list
+- addon-manager: enabled
+- dashboard: disabled
+- default-storageclass: enabled
+- efk: disabled
+- freshpod: disabled
+- gvisor: disabled
+- heapster: disabled
+- ingress: disabled
+- logviewer: disabled
+- metrics-server: disabled
+- nvidia-driver-installer: disabled
+- nvidia-gpu-device-plugin: disabled
+- registry: disabled
+- registry-creds: disabled
+- storage-provisioner: enabled
+- storage-provisioner-gluster: disabled
+```
+
+- enable the dashboard addons: `minikube addons enable dashboard`
+- looking for ip:port of dashboard:
+`kubectl get svc --namespace=kube-system`
+or `kubectl get all -n kube-system --selector k8s-app=kubernetes-dashboard`
+- run the dashboard:
+`$ minikube service kubernetes-dashboard -n kube-system`
+in my case it was: `minikube dashboard`
+
+- get information about running services:
+
+```sh
+$ kubectl get svc --namespace=kube-system
+NAME                   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                  AGE
+kube-dns               ClusterIP   10.96.0.10      <none>        53/UDP,53/TCP,9153/TCP   6h16m
+kubernetes-dashboard   ClusterIP   10.107.54.145   <none>        80/TCP                   16m
+
+ $ kubectl get svc -A
+NAMESPACE     NAME                   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                  AGE
+default       comment                ClusterIP   10.108.131.239   <none>        9292/TCP                 7h56m
+default       comment-db             ClusterIP   10.99.231.69     <none>        27017/TCP                7h56m
+default       kubernetes             ClusterIP   10.96.0.1        <none>        443/TCP                  7h58m
+default       post                   ClusterIP   10.98.64.24      <none>        5000/TCP                 7h56m
+default       post-db                ClusterIP   10.97.211.168    <none>        27017/TCP                7h56m
+default       ui                     NodePort    10.105.215.8     <none>        9292:32092/TCP           161m
+dev           comment                ClusterIP   10.110.208.1     <none>        9292/TCP                 21m
+dev           comment-db             ClusterIP   10.102.71.101    <none>        27017/TCP                21m
+dev           mongodb                ClusterIP   10.107.85.27     <none>        27017/TCP                21m
+dev           post                   ClusterIP   10.96.44.13      <none>        5000/TCP                 21m
+dev           post-db                ClusterIP   10.96.164.170    <none>        27017/TCP                21m
+dev           ui                     ClusterIP   10.111.175.117   <none>        9292/TCP                 20m
+kube-system   kube-dns               ClusterIP   10.96.0.10       <none>        53/UDP,53/TCP,9153/TCP   7h58m
+kube-system   kubernetes-dashboard   ClusterIP   10.107.54.145    <none>        80/TCP                   118m
+
+Possible resources include (case insensitive):
+
+pod (po), service (svc), replicationcontroller (rc), deployment (deploy), replicaset (rs)
+```
+
+```sh
+$ minikube dashboard
+* Verifying dashboard health ...
+* Launching proxy ...
+* Verifying proxy health ...
+* Opening http://127.0.0.1:40101/api/v1/namespaces/kube-system/services/http:kubernetes-dashboard:/proxy/ in your default browser...
+```
+
+
+To access Reddit application from outside we need to adjust the network. Forward application 9292 port to host 8080 port:
+
+```sh
+kubectl get pods --selector component=ui
+kubectl port-forward <pod-name> 8080:9292
+```
+
+Error arised:
+
+```sh
+kubectl get pods --all-namespaces
+NAMESPACE     NAME                               READY   STATUS                 RESTARTS   AGE
+default       comment-6c58c4f89-9dprq            0/1     ImagePullBackOff       0          5m20s
+default       comment-6c58c4f89-l8pzn            0/1     ImagePullBackOff       0          5m20s
+default       comment-6c58c4f89-v69zk            0/1     ImagePullBackOff       0          5m20s
+```
+
+[Kubernetes Troubleshooting](https://managedkube.com/kubernetes/k8sbot/troubleshooting/imagepullbackoff/2019/02/23/imagepullbackoff.html):
+
+```sh
+$ kubectl describe pod comment-6c58c4f89-9dprq
+Name:           comment-6c58c4f89-9dprq
+Namespace:      default
+Priority:       0
+Node:           minikube/10.0.2.15
+Start Time:     Fri, 20 Sep 2019 23:20:44 +0300
+Labels:         app=reddit
+                component=comment
+                pod-template-hash=6c58c4f89
+. . .
+Warning  Failed     8m14s                 kubelet, minikube  Failed to pull image "ivbdockerhub/comment": rpc error: code = Unknown desc = Error response from daemon: Get https://registry-1.docker.io/v2/: dial tcp: lookup registry-1.docker.io on 10.0.2.3:53: read udp 10.0.2.15:46194->10.0.2.3:53: i/o timeout
+  Normal   BackOff    5m43s (x15 over 10m)  kubelet, minikube  Back-off pulling image "ivbdockerhub/comment"
+  Warning  Failed     43s (x37 over 10m)    kubelet, minikube  Error: ImagePullBackOff
+```
+
+Fix: point your docker client to the VM's docker daemon by running:
+`eval $(minikube docker-env)` or [Creating a Secret with Docker Config](https://kubernetes.io/docs/concepts/containers/images/#creating-a-secret-with-a-docker-config)
+
+One more error occurred after rebooting the PC:
+
+```sh
+> $ kubectl get nodes
+> error: You must be logged in to the server (Unauthorized)
+> $ kubectl config view --minify | grep /.minikube | xargs stat
+> stat: cannot stat 'certificate-authority:': No such file or directory
+>  File: '/home/ivbor/.minikube/ca.crt'
+> ...
+```
+
+Fix: 
+ - delete the cluster using `minikube delete`
+ - Clear everything from the config:
+
+```sh
+kubectl config delete-context minikube
+kubectl config delete-cluster minikube
+kubectl config unset.users minikube
+rm -rf ~/.kube/config
+rm -rf ~/.minikube
+```
+
+- cascade the deletion of the resources managed by this resource (e.g. Pods created by a ReplicationController)
+
+```sh
+$ kubectl delete deployment --cascade=true --all=true
+deployment.extensions "comment-deployment" deleted
+deployment.extensions "post-deployment" deleted
+```
+
+ But that wasn't enough, nothing has helped. I've noticed that minikube was installed with root privileges: `sudo install minikube /usr/local/bin` and certificetes was generated by user ivbor:
+
+```sh
+ls -al /usr/local/bin/
+total 273348
+drwxr-xr-x  2 root  root       4096 Sep 21 22:07 .
+drwxr-xr-x 10 root  root       4096 Nov 24  2017 ..
+-rwxr-xr-x  1 root  root       6536 Feb  7  2019 apt
+--> -rwxrwxr-x  1 ivbor ivbor  20574840 Sep 15 20:50 cfssl
+--> -rwxrwxr-x  1 ivbor ivbor  12670032 Sep 15 20:51 cfssljson
+-rwxr-xr-x  1 root  root   16168192 Aug 24 23:19 docker-compose
+-rwxr-xr-x  1 root  root   28164576 Aug 19 15:00 docker-machine
+-rwxr-xr-x  1 root  root        535 Jun 29 10:27 gnome-help
+-rwxr-xr-x  1 root  root        196 Feb  7  2019 highlight
+-rwxr-xr-x  1 root  root        498 Aug 19 10:03 launchy
+--> -rwxrwxr-x  1 root  root   55869264 Sep 19 16:20 minikube
+```
+
+So, I've aligned the privileges of these binaries, recreated the cluster and have got an access to it.
+
+It's happened again, containers do not start, the cluster stops responding and VM is getting stuck. 
+Increasing memory allocated to the VM fixed the problem: `$ minikube config set memory 6000`
+
+- point the labels for pods identification within the cluster:
+
+```yml
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: ui
+>>labels:
+>>  app: reddit
+>>  component: ui
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+>>    app: reddit
+>>    component: ui
+  template:
+    metadata:
+      name: ui-pod
+>>    labels:
+>>      app: reddit
+>>      component: ui
+    spec:
+      containers:
+      - image: ivbdockerhub/ui:latest
+        name: ui
+```
+ 
+- mount the standard volume to store the data outside the container: 
+
+```yml
+...
+spec:
+      containers:
+      - image: mongo:3.2
+        name: mongo
+        volumeMounts:
+        - name: mongo-persistent-storage
+          mountPath: /data/db
+      volumes:
+      - name: mongo-persistent-storage
+        emptyDir: {}
+```
+
+- create the Service abstraction that describes the way of microservices interaction and as a policy by which to access the appropriate microservices within the cluster:
+
+```yml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: comment
+  labels:
+    app: reddit
+    component: comment
+spec:
+  ports:
+  - port: 9292
+    protocol: TCP
+    targetPort: 9292
+  selector:
+    app: reddit
+    component: comment
+```
+
+- Pods have to be found by given labels:
+
+```sh
+$ kubectl describe service comment | grep Endpoints`
+Endpoints:         172.17.0.4:9292,172.17.0.5:9292,172.17.0.6:9292
+```
+
+- point the external port to access the application from outside using type NodePort instead of default ClusterIP type:
+
+```yml
+spec:
+  type: NodePort
+  ports:
+  - nodePort: 32092
+    port: 9292
+. . .
+```
+
+$ kubectl exec -ti <pod-name> nslookup comment
+nslookup: can't resolve '(null)': Name does not resolve
+
+```sh
+$ minikube service list
+|-------------|------------|-----------------------------|
+|  NAMESPACE  |    NAME    |             URL             |
+|-------------|------------|-----------------------------|
+| default     | comment    | No node port                |
+| default     | comment-db | No node port                |
+| default     | kubernetes | No node port                |
+| default     | post       | No node port                |
+| default     | post-db    | No node port                |
+| default     | ui         | http://192.168.99.100:32092 |
+| kube-system | kube-dns   | No node port                |
+```
+
+- add information about environment to ui-deployment.yml:
+
+```yml
+    ...
+    spec:
+      containers:
+      - image: chromko/ui
+        name: ui
+        env:
+        - name: ENV
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+```
+
+- add new namespace "dev" and run our reddit application in new namespace, changed the NodePort beforehand in order to resolve port conflict:
+
+```sh
+kubectl apply -f ui-service.yml -n dev
+service/ui configured
+
+$ kubectl get svc -A
+NAMESPACE     NAME                   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                  AGE
+default       comment                ClusterIP   10.108.131.239   <none>        9292/TCP                 8h
+default       comment-db             ClusterIP   10.99.231.69     <none>        27017/TCP                8h
+default       kubernetes             ClusterIP   10.96.0.1        <none>        443/TCP                  8h
+default       post                   ClusterIP   10.98.64.24      <none>        5000/TCP                 8h
+default       post-db                ClusterIP   10.97.211.168    <none>        27017/TCP                8h
+--> default   ui                     NodePort    10.105.215.8     <none>        9292:32092/TCP           173m
+dev           comment                ClusterIP   10.110.208.1     <none>        9292/TCP                 34m
+dev           comment-db             ClusterIP   10.102.71.101    <none>        27017/TCP                34m
+dev           mongodb                ClusterIP   10.107.85.27     <none>        27017/TCP                34m
+dev           post                   ClusterIP   10.96.44.13      <none>        5000/TCP                 34m
+dev           post-db                ClusterIP   10.96.164.170    <none>        27017/TCP                34m
+-->dev        ui                     NodePort    10.111.175.117   <none>        9292:31092/TCP           33m
+kube-system   kube-dns               ClusterIP   10.96.0.10       <none>        53/UDP,53/TCP,9153/TCP   8h
+kube-system   kubernetes-dashboard   ClusterIP   10.107.54.145    <none>        80/TCP                   130m
+```
+
+After checking if everything work well locally, we are ready to deploy our application on Google Kubernetes Engine.
+Create Kubernetes Cluster :
+
+- management components are running in Container Engine:
+  - kube-apiserver
+  - kube-scheduler
+  - kube-controller-manager
+  - etcd
+- workloads are running on work nodes, they are standard nodes of the Google compute engine
+  - addons
+  - monitoring
+  - logging
+  - ingress backend
+  - runtimes
+
+Before proceeding with the deploy of the application we need to connect to our cluster in GKE:
+
+```sh
+$ gcloud container clusters get-credentials standard-cluster-1 --zone us-central1-a --project docker-250311
+Fetching cluster endpoint and auth data.
+kubeconfig entry generated for standard-cluster-1.
+```
+
+As a result the user, cluster and context will be added into ~/.kube/config it can be checked running the command:
+
+```sh
+$ kubectl config current-context
+gke_docker-250311_us-central1-a_standard-cluster-1
+```
+
+Now create the Dev namespace: 
+
+```sh
+$ kubectl apply -f ./kubernetes/reddit/dev-namespace.yml 
+namespace/dev created
+```
+
+then deploy all components of the Reddit application in namespace dev:
+
+```sh
+$ kubectl apply -f ./kubernetes/reddit/ -n dev
+deployment.apps/comment created
+service/comment-db created
+service/comment created
+namespace/dev unchanged
+deployment.apps/mongo created
+service/mongodb created
+deployment.apps/post created
+service/post-db created
+service/post created
+deployment.apps/ui created
+service/ui created
+```
+
+Get External IP of cluster nodes:
+
+```sh
+$ kubectl get nodes -o wide
+NAME                                                STATUS   ROLES    AGE   VERSION         INTERNAL-IP   EXTERNAL-IP    OS-IMAGE                             KERNEL-VERSION   CONTAINER-RUNTIME
+gke-standard-cluster-1-default-pool-75430a20-1xdk   Ready    <none>   16m   v1.13.7-gke.8   10.128.0.16   35.202.251.2   Container-Optimized OS from Google   4.14.127+        docker://18.9.3
+gke-standard-cluster-1-default-pool-75430a20-cwl7   Ready    <none>   16m   v1.13.7-gke.8   10.128.0.15   34.66.62.2     Container-Optimized OS from Google   4.14.127+        docker://18.9.3
+```
+
+Look for the exposed port UI service: `$ kubectl describe service ui -n dev | grep -i nodeport`
+
+```sh
+ $ kubectl describe service ui -n dev | grep -i nodeport
+Type:                     NodePort
+NodePort:                 <unset>  31092/TCP
+```
+
+Now we can connect to our application by the link http://<node-ip>:<NodePort>
+
+- [x] Add the [Kubernetes Dashboard](https://github.com/kubernetes/dashboard) by enabling it in the cluster's Add-ons of the cluster properties.
+Run proxy: `$ kubectl proxy`: > "Starting to serve on 127.0.0.1:8001" 
+According to [Kubernetes Dashboard Web UI for k8s clusters](https://github.com/kubernetes/dashboard) run this link: http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/
+
+However we can't access the service due to RBAC limitations. So, we should add cluster-admin role to kubernetes-dashboard service account using clusterrolebinding:
+
+```sh
+kubectl create clusterrolebinding kubernetes-dashboard \
+--clusterrole=cluster-admin \
+--serviceaccount=kube-system:kubernetes-dashboard
+```
+
+Commands below allow to edit or take token for service-account:
+
+```sh
+$ gcloud container clusters get-credentials standard-cluster-1 --zone us-central1-a --project docker-250311 \
+&& kubectl edit secret default-token-szvgq --namespace dev
+
+$ gcloud container clusters get-credentials standard-cluster-1 --zone us-central1-a --project docker-250311 \
+&& kubectl edit secret kubernetes-dashboard-token-jms2n --namespace dev
+```
+
+Gaining access to the cluster that is now created with the commands available is quick. The two commands execute as shown:
+`gcloud container clusters get-credentials <account> --zone <us-west1-a> --project <project_name>`
+and then:
+`kubectl proxy`
+
+As a workaround we can [skip the login process](https://devblogs.microsoft.com/premier-developer/bypassing-authentication-for-the-local-kubernetes-cluster-dashboard/), of course it can be applied only for the local cluster. So, add the following arguments in kubernetes-dashboard.yml:
+
+```yml
+--enable-skip-login
+--disable-settings-authorizer
+```
+
+
+- [x] Extra task with (*): deploy Kubernetes cluster in GKE using Terraform. Create yaml-manifests for entities responsible for access to dashboard. 
+As for dashboard yaml-manifests, thanks to google, original github [Kubernetes/dashboard](https://github.com/kubernetes/dashboard/blob/master/aio/test-resources/kubernetes-dashboard-local.yaml), ["The Kubernetes Authors"](https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml) and  also to [followers](https://github.com/rootsongjc/kubernetes-handbook/blob/master/manifests/dashboard-1.7.1/kubernetes-dashboard.yaml), everything is done before us.
+
+
+
+
+Relative links: 
+1. [KIND - Kubernetes IN Docker - local clusters for testing Kubernetes](https://github.com/kubernetes-sigs/kind)
+2. [10 Most Common Reasons Kubernetes Deployments Fail](https://kukulinski.com/10-most-common-reasons-kubernetes-deployments-fail-part-1/)
+3. [Getting Started strong](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#-strong-getting-started-strong-)
+4. [Infrastructure as Code Examples](https://github.com/hashicorp/terraform-guides/tree/master/infrastructure-as-code)
+5. [Kubernetes on Google Cloud Platform](https://www.padok.fr/en/blog/kubernetes-google-cloud-terraform-cluster)
