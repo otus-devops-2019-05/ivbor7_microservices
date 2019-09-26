@@ -12,9 +12,9 @@ ivbor7 microservices repository
 - [HW#18 (logging-1): Logging and disributed tracing](./README.md#homework-18)
 - [HW#19 (kubernetes-1): Introduction to Kubernetes](./README.md#homework-19)
 - [HW#20 (kubernetes-2): Launch Cluster, Application. Security Model](./README.md#homework-20)
+- [HW#21 (kubernetes-3): Kubernetes: Networks, Storages](./README.md#homework-21)
 
-
-#### Homework #12
+## Homework #12
 (docker-2 branch)
 
 Within the hw#12 the following tasks were done:
@@ -157,7 +157,7 @@ $ docker run --name reddit --rm -it <dockerhub-login>/otus-reddit:1.0 bash  <-- 
 
  - [ ] Extra task with (*) - create the prototype of infrastructure **in ToDo list** 
 
-#### Homework #13
+## Homework #13
 (docker-3 branch)
 
 Within the hw#13 the following tasks were done:
@@ -247,8 +247,8 @@ Dockerfile.# - files contain optimized image description for docker and are loca
 ```
 other microservice images: post, comment and ui can be mounted in usual way.
 
-[#hw14]:
-#### Homework #14
+
+## Homework #14
 (docker-4 branch)
 
 Within the hw#14 the following tasks were done:
@@ -309,7 +309,7 @@ docker run -d --network=reddit -p 9292:9292 ivb/ui:3.0
 Differences between "volumes" and "bind mount" approach is described [there](https://docs.docker.com/storage/volumes/) 
 The new <volumes> key mounts the project directory (microservices directory) on the host to /app inside the container, allowing us to modify the code on the fly, without having to rebuild the image.
 
-#### Homework #15
+## Homework #15
 (gitlab-ci-1 branch)
 
  - create vm instance via gcloud compute command group:
@@ -499,7 +499,7 @@ Useful links:
 [TOML - ](https://github.com/toml-lang/toml)
 [Best practices for building docker images with GitLab CI](https://blog.callr.tech/building-docker-images-with-gitlab-ci-best-practices/)
 
-#### Homework #16
+## Homework #16
 (monitoring-1 branch)
 
 Within the hw#16 the following tasks were done:
@@ -695,7 +695,7 @@ Links to additional information:
 
 _IMPORTANT NOTE:_ before running Makefile, it's necessary to rename Madefile to Makefile in microservices' folders src/ui|comment|post-py
 
-#### Homework #17
+## Homework #17
 (monitoring-2 branch)
 
 - Docker containers monitoring
@@ -966,7 +966,7 @@ Several related links:
  - [Setting up Prometheus alerts](https://0x63.me/setting-up-prometheus-alerts/)
 
 
-#### Homework #18
+## Homework #18
 (logging-1 branch)
 
 Within the hw#18 the following tasks were done:
@@ -1181,7 +1181,7 @@ Date Time 	Relative Time 	Annotation 	Address
 17/09/2019, 01:47:24 	18.890ms 	Server Finish 	10.0.1.4:5000 (post)
 ```
 
-#### Homework #19
+## Homework #19
 (kubernetes-1 branch)
 
 Walking through the setting up [Kubernetes the hard way](https://github.com/kelseyhightower/kubernetes-the-hard-way), the configuration files and certificates were generated
@@ -1981,3 +1981,220 @@ Relative links:
 3. [Getting Started strong](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#-strong-getting-started-strong-)
 4. [Infrastructure as Code Examples](https://github.com/hashicorp/terraform-guides/tree/master/infrastructure-as-code)
 5. [Kubernetes on Google Cloud Platform](https://www.padok.fr/en/blog/kubernetes-google-cloud-terraform-cluster)
+
+
+## Homework #21
+
+Create the cluster in GKE and deploy the reddit aplication using manifests from pevious Homework #20.
+Connect the cluster aftewards: 
+
+```sh
+$ gcloud container clusters get-credentials docker-250311-cluster --region us-central1 --project docker-250311          
+Fetching cluster endpoint and auth data.
+kubeconfig entry generated for docker-250311-cluster.`
+```
+
+Tune the ui service adding Coogle cloud Load-Balancer:
+
+```sh
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    nodePort: 32092
+    protocol: TCP
+    targetPort: 9292
+```
+
+Now Load-Balancer has to be configured and obtain new External IP address to access the cluster and application. This process will take some time:
+
+```sh
+$ kubectl get service -n dev --selector component=ui
+NAME   TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+ui     LoadBalancer   10.51.246.81   <pending>     80:32092/TCP   14m
+ivbor@ivbor-nout ~/Otus/ivbor7_microservices/kubernetes/reddit $ kubectl get service -n dev --selector component=ui
+NAME   TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)        AGE
+ui     LoadBalancer   10.51.246.81   35.184.181.50   80:32092/TCP   17m
+```
+
+Drawbacks of using LB Service:
+
+- cannot be controlled using http URI (L7-balancing)
+- are used only cloud LBs
+- there are no flexible rules to handle the traffic
+
+To fix these weaknesses the Kubernetes entity Ingress are called.
+Ingress - this is a set of rules inside of Kubernetes cluster, designed to allow incoming connections could reach Services. Ingress managed by Ingress Conroller which has not started with cluster and can be activated like a pluggin and exists in the form of Pod.
+Ingress Controller consist of two parts: first - utility that monitor a new Ingress objects via k8s API and  update the Balancer configuration and seconf part - Balancer (nginx, haproxy, traefik,...) handles the network traffic.
+
+Create the Ingress for  UI  service:
+
+```yml
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ui
+spec:
+  backend:
+    serviceName: ui
+    servicePort: 80
+```
+
+and apply the manifest: `kubectl apply -f ui-ingress.yml -n dev`
+
+- the new address of application now is:
+
+```sh
+ $ kubectl get ingress -n dev
+NAME   HOSTS   ADDRESS       PORTS   AGE
+ui     *       34.95.93.83   80      7m17s
+
+kubectl get service -n dev --selector component=ui
+NAME   TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)        AGE
+ui     LoadBalancer   10.51.246.81   35.184.181.50   80:32092/TCP   164m
+```
+
+For now we have two balancer. So, we can remove one of them. Type LoadBalancer return it to NodePort in ui-service.yml:
+
+```yml
+spec:
+  type: NodePort
+  ports:
+  - port: 9292
+    protocol: TCP
+    targetPort: 9292
+```
+
+One more case. Let's make the Ingress Controller work as a classic web. Add the line in ui-ingress.yml:
+
+```yml
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /*
+        backend:
+          serviceName: ui
+          servicePort: 9292
+```
+
+Currently Ingress is:
+
+```sh
+$ kubectl get ingress -n dev
+NAME   HOSTS   ADDRESS       PORTS   AGE
+ui     *       34.95.93.83   80      112m
+```
+
+Protect our Ingress with TLS:
+
+```sh
+$ openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj "/CN=34.95.93.83"
+Generating a 2048 bit RSA private key
+.+++
+.....................+++
+writing new private key to 'tls.key'
+-----
+```
+
+upload it in cluster: `kubectl create secret tls ui-ingress --key tls.key --cert tls.crt -n dev`
+check it then:
+
+```sh
+$ kubectl describe secret ui-ingress -n dev
+Name:         ui-ingress
+Namespace:    dev
+Labels:       <none>
+Annotations:  <none>
+
+Type:  kubernetes.io/tls
+
+Data
+====
+tls.crt:  1099 bytes
+tls.key:  1704 bytes
+```
+
+Now configure Ingress to accept only HTTPS traffic:
+
+```sh
+ui-ingress.yml
+...
+metadata:
+  name: ui
+  annotations:
+    kubernetes.io/ingress.allow-http: "false"
+spec:
+  tls:
+  - secretName: ui-ingress
+  ...
+```
+
+After applying Ingress manifest an http protocol may not be deleted from existing Ingress rules, then you need to manually remove it and recreate:
+
+```sh
+$ kubectl delete ingress ui -n dev
+$ kubectl apply -f ui-ingress.yml -n dev
+```
+
+
+- [x] extra task: describe [Kubernetes manifest for Secret](https://kubernetes.io/docs/concepts/configuration/secret/) object
+
+```yml
+---
+# ------------------- UI Secret ------------------- #
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: ui
+  name: ui-ingress
+  namespace: dev
+data:
+  tls.crt: base64 encoded cert
+  tls.key: base64 encoded key
+type: kubernetes.io/tls
+```
+Then create the Secret resource running command: `kubectl apply -f ./secret.yaml`
+
+
+Where:
+> base64 encoded cert|key - means the following : `cat server.crt(key)|base64 -w0`
+
+__Encoding Note:__ The serialized JSON and YAML values of secret data are encoded as base64 strings. Newlines are not valid within these strings and must be omitted. When using the base64 utility on Darwin/macOS users should avoid using the -b option to split long lines. Conversely Linux users should add the option -w 0 to base64 commands or the pipeline base64 | tr -d '\n' if -w option is not available
+
+There are all the [types of Secrets](https://docs.okd.io/latest/dev_guide/secrets.html#types-of-secrets):
+> SecretType = "Opaque"                                 // Opaque (arbitrary data; default)
+> SecretType = "kubernetes.io/service-account-token"    // Kubernetes auth token
+> SecretType = "kubernetes.io/dockercfg"                // Docker registry auth
+> SecretType = "kubernetes.io/dockerconfigjson"         // Latest Docker registry auth
+
+Types of Secrets:
+
+The value in the type field indicates the structure of the secret’s key names and values. The type can be used to enforce the presence of user names and keys in the secret object. If you do not want validation, use the opaque type, which is the default.
+
+Specify one of the following types to trigger minimal server-side validation to ensure the presence of specific key names in the secret data:
+
+    kubernetes.io/service-account-token. Uses a service account token.
+
+    kubernetes.io/dockercfg. Uses the .dockercfg file. for required Docker credentials.
+
+    kubernetes.io/dockerconfigjson. Uses the .docker/config.json file for required Docker credentials.
+
+    kubernetes.io/basic-auth. Use with Basic Authentication.
+
+    kubernetes.io/ssh-auth. Use with SSH Key Authentication.
+
+    kubernetes.io/tls. Use with TLS certificate authorities
+
+Specify type= Opaque if you do not want validation, which means the secret does not claim to conform to any convention for key names or values. An opaque secret, allows for unstructured key:value pairs that can contain arbitrary values.
+
+
+
+Related links:
+
+1. [Kubernetes cheatsheet (Unofficial)](https://unofficial-kubernetes.readthedocs.io/en/latest/user-guide/kubectl-cheatsheet/)
+2. [Init Containers - Kubernetes](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/?spm=a2c65.11461447.0.0.2ebb5d45blkPsA#what-can-init-containers-be-used-for)
+3. [How to create and Use Secrets in Kubernetes](https://www.alibabacloud.com/blog/how-to-create-and-use-secrets-in-kubernetes_594723)
+4. []()
