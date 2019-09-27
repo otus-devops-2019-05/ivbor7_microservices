@@ -2263,6 +2263,140 @@ can be used. You can find instructions on how to do this at:
 https://cloud.google.com/compute/docs/disks/add-persistent-disk#formatting
 ```
 
+Now all posts are saved after pod failing or stopping.
+Going to improve disk space consuming by using PersistentVolume mechanism.
+Create reddit-mongo-disk in mongo-volume.yml:
+
+```yml
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: reddit-mongo-disk
+spec:
+  capacity:
+    storage: 25Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  gcePersistentDisk:
+    fsType: "ext4" 
+    pdName: "reddit-mongo-disk"
+```
+
+and add Persistent Volume into our cluster: `kubectl apply -f mongo-volume.yml -n dev`
+In such way we've created the PersistentVolume as a disk in GCP common on the entire cluster. However to allocate the part of such storage for certain application we need to use PersistentVolimeClaim. It's a request for disk space alocation like a CPU or RAM distribution.
+
+Create mongo-claim.yml:
+
+```yml
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: mongo-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 15Gi
+```
+
+Notice we can use only one PersistentVolume for one PVC(PersistentVolumeClaim)
+
+```sh
+$ kubectl describe storageclass standard -n dev
+Name:                  standard
+IsDefaultClass:        Yes
+Annotations:           storageclass.kubernetes.io/is-default-class=true
+Provisioner:           kubernetes.io/gce-pd
+Parameters:            type=pd-standard
+AllowVolumeExpansion:  <unset>
+MountOptions:          <none>
+ReclaimPolicy:         Delete
+VolumeBindingMode:     Immediate
+Events:                <none>
+```
+
+If Claim does not find PV inside the given parameters cluster, or one will be occupied by another Claim’s
+then it'll create the needed PV using standard StorageClass. In our case it will be a regular slow disk.
+Connect and mount to our pods the storage allocated using PVC:
+
+```yml
+...
+spec:
+      containers:
+  ...
+      volumes:
+      - name: mongo-gce-pd-storage
+        persistentVolumeClaim:
+          claimName: mongo-pvc
+```
+
+#### Dynamic disk space allocation
+
+To automatically allocate disk space a Storage Classes will help us.
+Let's create fast ssd disk space called StorageClass **Fast**
+Create storage-fast.yml with the provisioner: kubernetes.io/gce-pd and disk type: pd-ssd:
+
+```yml
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1beta1
+metadata:
+  name: fast
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-ssd
+```
+
+Then we need PersistentVolumeClaim discrebed in mongo-claim-dynamic.yml:
+
+```yml
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: mongo-pvc-dynamic
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: fast
+  resources:
+    requests:
+      storage: 10Gi
+```
+
+And final stage connect the PVC to our Pods in mongo-deployment.yml:
+
+```yml
+...
+   spec:
+      containers:
+      - image: mongo:3.2
+        name: mongo
+        volumeMounts:
+        - name: mongo-gce-pd-storage
+          mountPath: /data/db
+      volumes:
+      - name: mongo-gce-pd-storage
+        persistentVolumeClaim:
+-->       claimName: mongo-pvc-dynamic
+```
+
+As result the list of available disks and allocated disk spaces are as follows:  
+
+```sh
+$ kubectl apply -f mongo-deployment.yml -n dev
+deployment.apps/mongo configured
+
+$ kubectl get persistentvolume -n dev
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM                   STORAGECLASS   REASON   AGE
+pvc-582fc4e3-e11e-11e9-80e9-42010a800254   15Gi       RWO            Delete           Bound       dev/mongo-pvc           standard                25m
+pvc-9b6763ad-e121-11e9-80e9-42010a800254   10Gi       RWO            Delete           Bound       dev/mongo-pvc-dynamic   fast                    107s
+reddit-mongo-disk                          25Gi       RWO            Retain           Available                                                   3h
+```
 
 
 Related links:
@@ -2270,4 +2404,5 @@ Related links:
 1. [Kubernetes cheatsheet (Unofficial)](https://unofficial-kubernetes.readthedocs.io/en/latest/user-guide/kubectl-cheatsheet/)
 2. [Init Containers - Kubernetes](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/?spm=a2c65.11461447.0.0.2ebb5d45blkPsA#what-can-init-containers-be-used-for)
 3. [How to create and Use Secrets in Kubernetes](https://www.alibabacloud.com/blog/how-to-create-and-use-secrets-in-kubernetes_594723)
-4. []()
+4. [Kubernetes Network Policy Recipes](https://github.com/ahmetb/kubernetes-network-policy-recipes/blob/master/10-allowing-traffic-with-multiple-selectors.md)
+5. [An Introduction to Kubernetes Network Policies for Security People](https://medium.com/@reuvenharrison/an-introduction-to-kubernetes-network-policies-for-security-people-ba92dd4c809d)
