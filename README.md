@@ -3,10 +3,10 @@ ivbor7 microservices repository
 
 ## Table of Contents:
 
-- [HW#12 (docker-2): branch: TravisCI, Docker, Docker-compose](./README.md#homework-12)
-- [HW#13 (docker-3): branch: Microservices](./README.md#homework-13)
+- [HW#12 (docker-2): TravisCI, Docker, Docker-compose](./README.md#homework-12)
+- [HW#13 (docker-3): Microservices](./README.md#homework-13)
 - [HW#14 (docker-4): Docker network](./README.md#homework-14)
-- [HW#15 (docker-5) GitlabCI arrangement](./README.md#homework-15)
+- [HW#15 (docker-5): GitlabCI arrangement](./README.md#homework-15)
 - [HW#16 (monitoring-1): Introduction to monitoring systems](./README.md#homework-16)
 - [HW#17 (monitoring-2): Application and Infrastructure monitoring](./README.md#homework-17)
 - [HW#18 (logging-1): Logging and disributed tracing](./README.md#homework-18)
