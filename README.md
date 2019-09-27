@@ -2223,7 +2223,8 @@ $ gcloud container clusters update reddit-cluster --zone=us-central1-a --update-
 Updating reddit-cluster...done.                                                                                                                                                                
 Updated [https://container.googleapis.com/v1/projects/docker-250311/zones/us-central1-a/clusters/reddit-cluster].
 To inspect the contents of your cluster, go to: https://console.cloud.google.com/kubernetes/workload_/gcloud/us-central1-a/reddit-cluster?project=docker-250311
-ivbor@ivbor-nout ~/Otus/ivbor7_microservices/kubernetes/reddit $ gcloud container clusters update reddit-cluster --zone=us-central1-a  --enable-network-policy
+
+$ gcloud container clusters update reddit-cluster --zone=us-central1-a  --enable-network-policy
 Enabling/Disabling Network Policy causes a rolling update of all cluster nodes, similar to performing a cluster upgrade.  This operation is long-running and will block other operations on the cluster (including delete) until it has run to completion.
 Do you want to continue (Y/n)?  y
 Updating reddit-cluster...done.
