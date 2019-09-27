@@ -1481,7 +1481,7 @@ gcloud -q compute firewall-rules delete \
 }
 ```
 
-Relative links:
+Related links:
 1. [kops - Kubernetes Operations](https://github.com/kubernetes/kops) - The easiest way to get a production grade Kubernetes cluster up and running.
 2. [Развертывание Kubernetes кластера при помощи Rancher 2.0](https://www.youtube.com/watch?v=3NX40K9D6tk)
 3. [Rancher 2.0](https://habr.com/ru/company/flant/blog/339120/)
@@ -1975,7 +1975,7 @@ As for dashboard yaml-manifests, thanks to google, original github [Kubernetes/d
 
 
 
-Relative links: 
+Related links: 
 1. [KIND - Kubernetes IN Docker - local clusters for testing Kubernetes](https://github.com/kubernetes-sigs/kind)
 2. [10 Most Common Reasons Kubernetes Deployments Fail](https://kukulinski.com/10-most-common-reasons-kubernetes-deployments-fail-part-1/)
 3. [Getting Started strong](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#-strong-getting-started-strong-)
@@ -1985,14 +1985,29 @@ Relative links:
 
 ## Homework #21
 
+(kubernetes-3 branch)
+
 Create the cluster in GKE and deploy the reddit aplication using manifests from pevious Homework #20.
 Connect the cluster aftewards: 
 
 ```sh
-$ gcloud container clusters get-credentials docker-250311-cluster --region us-central1 --project docker-250311          
+$ gcloud beta container clusters get-credentials reddit-cluster --region us-central1 --project docker-250311
 Fetching cluster endpoint and auth data.
-kubeconfig entry generated for docker-250311-cluster.`
+kubeconfig entry generated for docker-250311-cluster
 ```
+
+Create dev namespace: `kubectl apply -f kubernetes/reddit/dev-namespace.yml`
+and deploy application: `kubectl apply -f kubernetes/reddit/ -n dev`
+
+
+In case of Zonal Cluster created
+
+```sh
+$ gcloud container clusters get-credentials reddit-cluster --zone us-central1-a --project docker-250311
+Fetching cluster endpoint and auth data.
+kubeconfig entry generated for reddit-cluster
+```
+
 
 Tune the ui service adding Coogle cloud Load-Balancer:
 
@@ -2055,7 +2070,7 @@ NAME   TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)        AGE
 ui     LoadBalancer   10.51.246.81   35.184.181.50   80:32092/TCP   164m
 ```
 
-For now we have two balancer. So, we can remove one of them. Type LoadBalancer return it to NodePort in ui-service.yml:
+For now we have two balancer: Ingress and LoadBalancer. So, we can remove one of them. Let's restore type LoadBalancer return it to NodePort in ui-service.yml:
 
 ```yml
 spec:
@@ -2156,11 +2171,12 @@ data:
   tls.key: base64 encoded key
 type: kubernetes.io/tls
 ```
-Then create the Secret resource running command: `kubectl apply -f ./secret.yaml`
+
+Then create the Secret resource running command: `kubectl apply -f ./ui-secret.yaml`
 
 
-Where:
-> base64 encoded cert|key - means the following : `cat server.crt(key)|base64 -w0`
+Where (see outlined above code):
+> base64 encoded cert|key - means the following : `cat tls.crt(key)|base64 -w0`
 
 __Encoding Note:__ The serialized JSON and YAML values of secret data are encoded as base64 strings. Newlines are not valid within these strings and must be omitted. When using the base64 utility on Darwin/macOS users should avoid using the -b option to split long lines. Conversely Linux users should add the option -w 0 to base64 commands or the pipeline base64 | tr -d '\n' if -w option is not available
 
@@ -2189,6 +2205,63 @@ Specify one of the following types to trigger minimal server-side validation to 
     kubernetes.io/tls. Use with TLS certificate authorities
 
 Specify type= Opaque if you do not want validation, which means the secret does not claim to conform to any convention for key names or values. An opaque secret, allows for unstructured key:value pairs that can contain arbitrary values.
+
+Next task is to limit traffic to mongodb. Allow the traffic only from post and comment services to mongodb. This task can be resolved with help Network Policy.
+
+- Get the cluster's name:
+
+```sh
+$ gcloud container clusters list
+NAME            LOCATION       MASTER_VERSION  MASTER_IP    MACHINE_TYPE  NODE_VERSION  NUM_NODES  STATUS
+reddit-cluster  us-central1-a  1.13.7-gke.8    34.67.89.31  g1-small      1.13.7-gke.8  3          RUNNING
+```
+
+Enable network-policy for GKE:
+
+```sh
+$ gcloud container clusters update reddit-cluster --zone=us-central1-a --update-addons=NetworkPolicy=ENABLED
+Updating reddit-cluster...done.                                                                                                                                                                
+Updated [https://container.googleapis.com/v1/projects/docker-250311/zones/us-central1-a/clusters/reddit-cluster].
+To inspect the contents of your cluster, go to: https://console.cloud.google.com/kubernetes/workload_/gcloud/us-central1-a/reddit-cluster?project=docker-250311
+ivbor@ivbor-nout ~/Otus/ivbor7_microservices/kubernetes/reddit $ gcloud container clusters update reddit-cluster --zone=us-central1-a  --enable-network-policy
+Enabling/Disabling Network Policy causes a rolling update of all cluster nodes, similar to performing a cluster upgrade.  This operation is long-running and will block other operations on the cluster (including delete) until it has run to completion.
+Do you want to continue (Y/n)?  y
+Updating reddit-cluster...done.
+Updated [https://container.googleapis.com/v1/projects/docker-250311/zones/us-central1-a/clusters/reddit-cluster].
+To inspect the contents of your cluster, go to: https://console.cloud.google.com/kubernetes/workload_/gcloud/us-central1-a/reddit-cluster?project=docker-250311
+```
+
+[Enable traffic](https://github.com/ahmetb/kubernetes-network-policy-recipes/blob/master/10-allowing-traffic-with-multiple-selectors.md) for post sevice to mongodb:
+
+```yml
+...
+ ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: reddit
+          component: comment
+    - podSelector:
+        matchLabels:
+          app: reddit
+          component: post
+```
+
+Current storage for database does not save data after stopping the pod with mongo.
+Create a disk in GCP:
+
+```sh
+$ gcloud compute disks create --size=25GB --zone=us-central1-a reddit-mongo-disk
+WARNING: You have selected a disk size of under [200GB]. This may result in poor I/O performance. For more information, see: https://developers.google.com/compute/docs/disks#performance.
+Created [https://www.googleapis.com/compute/v1/projects/docker-250311/zones/us-central1-a/disks/reddit-mongo-disk].
+NAME               ZONE           SIZE_GB  TYPE         STATUS
+reddit-mongo-disk  us-central1-a  25       pd-standard  READY
+
+New disks are unformatted. You must format and mount a disk before it
+can be used. You can find instructions on how to do this at:
+
+https://cloud.google.com/compute/docs/disks/add-persistent-disk#formatting
+```
 
 
 

@@ -6,10 +6,10 @@ terraform {
 
 
 resource "google_container_cluster" "reddit-cluster" {
-  name     = "${var.project}-cluster"
-  location = "${var.region}"
+  name     = "${var.app}-cluster"
+  location = "${var.zone}"
   node_locations = [
-    "${var.region}-a",
+#    "${var.region}-a",
     "${var.region}-b",
     "${var.region}-c"
   ]
@@ -46,8 +46,8 @@ resource "google_container_cluster" "reddit-cluster" {
 }
 
 resource "google_container_node_pool" "cluster_preemptible_nodes" {
-  name               = "${var.project}-node-pool"
-  location           = "${var.region}"
+  name               = "${var.app}-node-pool"
+  location           = "${var.zone}"
   cluster            = "${google_container_cluster.reddit-cluster.name}"
   node_count         = "${var.min_node_count}"
 

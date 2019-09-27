@@ -5,11 +5,24 @@ variable project {
   default = "docker-250311"
 }
 
+variable app {
+  description = "Project name"
+  default = "reddit"
+}
+
+
 variable region {
   description = "Location = Region, that depricated in favor of location"
 
   # default value
   default = "us-central1"
+}
+
+variable zone {
+  description = "Location = Zone, that depricated in favor of location"
+
+  # default value
+  default = "us-central1-a"
 }
 
 variable initial_node_count {
