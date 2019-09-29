@@ -1,3 +1,6 @@
+##This terraform file creates k8s mutli-zonal cluster 
+##using a multi-zonal cluster, additional_zones should not contain the original 'zone'
+
 # Terraform file
 terraform {
   # version of  terraform
@@ -80,6 +83,11 @@ resource "google_container_node_pool" "cluster_preemptible_nodes" {
     ]
   }
 }
+
+resource "google_compute_address" "k8s-external-ip" {
+  name = "kubernetes-cluster-ip"
+}
+
 
 # Firewall rules for access  
 resource "google_compute_firewall" "fw_cluster_reddit" {
