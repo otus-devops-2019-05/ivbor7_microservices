@@ -25,3 +25,5 @@ __pycache__/  # Exclude the whole folder
 # MongoDB Eporter repo folder filtered
 monitoring/exporters/
 
+# Gitlab CI
+kubernetes/Gitlab_ci/
