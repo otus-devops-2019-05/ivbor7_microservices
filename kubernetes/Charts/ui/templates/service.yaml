@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-{{ .Chart.Name }}         # unique name of running resource
+  name: {{ template "ui.fullname" . }}         # unique name of running resource
   labels:
     app: reddit
     component: ui
