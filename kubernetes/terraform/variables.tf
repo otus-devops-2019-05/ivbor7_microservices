@@ -15,14 +15,15 @@ variable region {
   description = "Location = Region, that depricated in favor of location"
 
   # default value
-  default = "us-central1"
+  # default = "us-central1"
+  default = "europe-west4"
 }
 
 variable zone {
   description = "Location = Zone, that depricated in favor of location"
 
   # default value
-  default = "us-central1-a"
+  default = "europe-west4-a"
 }
 
 variable initial_node_count {
@@ -44,25 +45,26 @@ variable "min_node_count" {
 variable "max_node_count" {
   type = "string"
   description = "The maximum number of nodes PER ZONE in the  node pool"
-  default = 3
+  default = 2
 }
 
 variable "machine_type" {
   description = "GCE machine type"
-  default = "g1-small"
+  default = "n1-standard-2"
+#  default = "g1-small"
 }
 
 variable "disk_size" {
   description = "Disk size in Gb"
-  default = 20
+  default = 30
 }
 
 variable "username" {
   description = "User name"
-  default = "supermaster"
+  default = ""
 }
 
 variable "psw" {
   description = "Password"
-  default = "verystrongpassword"
+  default = ""
 }

@@ -1,3 +1,6 @@
+##This terraform file creates k8s mutli-zonal cluster 
+##using a multi-zonal cluster, additional_zones should not contain the original 'zone'
+
 # Terraform file
 terraform {
   # version of  terraform
@@ -31,7 +34,7 @@ resource "google_container_cluster" "reddit-cluster" {
 
 # Disable Horizontal Pod Autoscaling 
     horizontal_pod_autoscaling {
-      disabled = true             # change to false to enable autoscaling
+      disabled = false             # change to false to enable autoscaling
     }
   }
 
@@ -68,7 +71,7 @@ resource "google_container_node_pool" "cluster_preemptible_nodes" {
     disk_size_gb     = "${var.disk_size}"
 
     metadata = {
-      disable-legacy-endpoints = "true"
+      disable-legacy-endpoints = "false"
     }
 
     # Needed for correctly functioning cluster, see 
@@ -80,6 +83,11 @@ resource "google_container_node_pool" "cluster_preemptible_nodes" {
     ]
   }
 }
+
+#resource "google_compute_address" "k8s-external-ip" {
+#  name = "kubernetes-cluster-ip"
+#}
+
 
 # Firewall rules for access  
 resource "google_compute_firewall" "fw_cluster_reddit" {

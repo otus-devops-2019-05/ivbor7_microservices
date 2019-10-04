@@ -1,0 +1,8 @@
+name: post
+version: 1.0.0
+description: OTUS reddit application post
+maintainers:
+  - name: Ivan Boriskin
+    email: ivbor7@gmail.com
+appVersion: 1.0
+
