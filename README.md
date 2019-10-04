@@ -2422,43 +2422,31 @@ Fetching cluster endpoint and auth data.
 kubeconfig entry generated for reddit-cluster.
 ```
 
-Install Tiller:
-$ kubectl apply -f helm/tiller.yml 
-serviceaccount/tiller created
-clusterrolebinding.rbac.authorization.k8s.io/tiller created
-
-$ helm init --service-account tiller
-$HELM_HOME has been configured at /home/ivbor/.helm.
-
-Tiller (the Helm server-side component) has been installed into your Kubernetes Cluster.
-
-Please note: by default, Tiller is deployed with an insecure 'allow unauthenticated users' policy.
-To prevent this, run `helm init` with the --tiller-tls-verify flag.
-For more information on securing your installation see: https://docs.helm.sh/using_helm/#securing-your-helm-installation
-```
-
 Helm is pakage manager for Kubernetes [download](https://github.com/kubernetes/helm/releases) and install it
 into /usr/local/bin/
 
 Don't forget to begin working with Helm run 'helm init': `$ helm init`
+Install the Helm's server part called Tiller. It's Kubernetes addon it means POD, that communicate with API Kubernetes. For it we need to create a service account and define assign RBAC role.
+
+```sh
+$ kubectl apply -f helm/tiller.yml 
+serviceaccount/tiller created
+clusterrolebinding.rbac.authorization.k8s.io/tiller created
+```
 
 Helm reads the configuration from (~/.kube/config) and define by itself current context(cluster, user, namespace). To change current cluster need to change current context running command:
-`$ kubectl config set-context`  
- or `$ helm --kube-context`
-
-
-
-Install the Helm's server part called Tiller. It's Kubernetes addon it means POD, that communicate with API Kubernetes. For it we need to create a service account and define assign RBAC role.
+`$ kubectl config set-context`  or `$ helm --kube-context`
 
 During the cluster bootstrap the cluster endpoint IP didn't update due to the old records about the same cluster in ~/.kube/config
 
 Run tiller-server and check it:
 
 ```bash
+
 $ helm init --service-account tiller
-$HELM_HOME has been configured at /home/ivbor/.helm.
-Warning: Tiller is already installed in the cluster.
-(Use --client-only to suppress this message, or --upgrade to upgrade Tiller to the current version.)
+$HELM_HOME has been configured at ~/.helm.
+Tiller (the Helm server-side component) has been installed into your Kubernetes Cluster.
+...
 
 $ kubectl get pods -n kube-system --selector app=helm
 NAME                            READY   STATUS    RESTARTS   AGE
@@ -2483,6 +2471,7 @@ Error:
 $ helm list
 Error: configmaps is forbidden: User "system:serviceaccount:kube-system:default" cannot list resource "configmaps" in API group "" in the namespace "kube-system"
 ```
+
 Fix:
 
 ```sh
@@ -2546,7 +2535,7 @@ test-ui-3-ui   *       34.95.93.83     80        114s
 ui             *                       80, 443   20m
 ```
 
-Next step wil be parameterizing of ui templates. Will customise an image, it's tag and service's port in the following way:
+Next step is to parameterize the ui templates. Customise an image, it's tag and service's port in the following way:
 
 ```yml
 containers:
@@ -2556,7 +2545,7 @@ containers:
     - containerPort: {{ .Values.service.internalPort }}
 ```
 
-create the value.yml with values for the parameterised variables:
+create the value.yml with values for the parameterized variables:
 
 ```yml
 ---
@@ -2605,7 +2594,7 @@ it is:
           value: {{ .Values.databaseHost }}
 ```
 
-and it will be so:
+and so it will be:
 
 ```yml
 env:
@@ -2634,7 +2623,7 @@ metadata:
   labels:
 ```
 
-Where: "." - the whole visibility area of all variables(here can be passed .Chart, in such case .Values will not be passed).
+Where: "." - the whole visibility area of all variables(here .Chart can be passed, but in such case .Values will not be passed).
 
 Create _helpers.tpl in microservices' templates folders:
 
@@ -2683,7 +2672,7 @@ dependencies:
 
 Now  we need to load the dependencies: `kubernetes/Charts/reddit: $ helm dep update`
 Will be created the charts directory with dependencies in the archive form.
-Chart for database find in public repository:
+Chart for database going to find in public repository:
 
 ```sh
 $ helm search mongo
@@ -2757,7 +2746,7 @@ reddit-test-comment  0/1    1           0          2s
 reddit-test-post     0/1    1           0          2s
 ```
 
-UI service is available now? but we have an issue. UI doesn't know how to communicate with post and comment services, because thier name are dynamical and depends on Charts.
+UI service is available now, but we have an issue. UI doesn't know how to communicate with post and comment services, because thier name are dynamical and depends on Charts.
 The variables declared in Dockerfiles:
 
 ENV POST_SERVICE_HOST post
@@ -2822,13 +2811,9 @@ reddit-test-comment  1/1    1           1          69m
 reddit-test-post     0/1    1           0          69m
 ```
 
-мы деплоили с помощью tiller'а с правами cluster-admin,
-что небезопасно. Есть концепция создания tiller'а в каждом
-namespace'е и наделение его лишь необходимыми правами. Чтобы
-не создавать каждый раз namespace и tiller в нем руками,
-используем [tiller plugin ( описание )](https://github.com/rimusz/helm-tiller):
+Deploying via Tiller with cluster-admin privileges is not secure. The concept There is a concept for creating a tiller in every namespace and giving it only the necessary rights. In order not to create a namespace and a tiller in it each time manually we'll use the [tiller plugin](https://github.com/rimusz/helm-tiller).
 
-1. Delete the former tiller from cluster [articles here](https://stackoverflow.com/questions/47583821/how-to-delete-tiller-from-kubernetes-cluster/47583918):
+Delete the former tiller from cluster [articles here](https://stackoverflow.com/questions/47583821/how-to-delete-tiller-from-kubernetes-cluster/47583918):
 
 You have to uninstall 3 things to completely get rid of tiller:
 
@@ -2850,7 +2835,9 @@ $ kubectl get pods -n kube-system --selector app=helm
 NAME                            READY   STATUS    RESTARTS   AGE
 tiller-deploy-5d6cc99fc-jx6g6   1/1     Running   0          8h
 ```
+
 you can describe the pod to verify the labels: `$ kubectl describes pod tiller-deploy-5d6cc99fc-jx6g6 -n kube-system`
+
 So:
 
 ```sh
@@ -2910,6 +2897,7 @@ Check the application's availability in the browser.
 Download Helm 3: `curl -LO https://get.helm.sh/helm-v3.0.0-beta.3-darwin-amd64.tar.gz`
 Unfortunately the binary file is not correct!
 Use another repository: 
+
 ```sh
 
 $ curl -LO https://get.helm.sh/helm-v3.0.0-beta.3-linux-amd64.tar.gz
@@ -2924,8 +2912,8 @@ $ helm3 version
 version.BuildInfo{Version:"v3.0.0-beta.3
 ```
 
-Create new namespace: `$ kubectl create ns new-helm`
-Deploy: 
+Create the new namespace: `$ kubectl create ns new-helm`
+Deploy the application: 
 
 ```sh 
 $ helm3 upgrade --install --namespace=new-helm --wait reddit-release reddit/
@@ -2938,11 +2926,13 @@ STATUS: deployed
 
 The output of the helm3 is very short.
 Checking:
+
 ```sh
   $ kubectl get ingress -n new-helm
 NAME                HOSTS   ADDRESS       PORTS   AGE
 reddit-release-ui   *       34.95.93.83   80      6m8s
 ```
+
 After walking around the helm3 going to getting back to helm2 for that do the following:
 
 ```sh
@@ -2956,9 +2946,8 @@ $HELM_HOME has been configured at /home/ivbor/.helm.
 Tiller (the Helm server-side component) has been installed into your Kubernetes Cluster.
 ```
 
-
-
 Delete the release: 
+
 ```sh
 $ helm3 delete --namespace=new-helm reddit-release
 release "reddit-release" uninstalled` 
@@ -2975,7 +2964,7 @@ No resources found.
 ```
 
 Add the Gitlab repository: `helm repo add gitlab https://charts.gitlab.io`
-To change Gitlab configuration downlad the Chart: `helm fetch gitlab/gitlab-omnibus --version 0.1.37 --untar`
+To change Gitlab configuration download the Chart: `helm fetch gitlab/gitlab-omnibus --version 0.1.37 --untar`
 Make some modification into Gitlab's config files in accordance with instructions in the task and install Gitlab:
 
 ```sh
@@ -2995,53 +2984,7 @@ gitlab-gitlab-runner             2     3s
 kube-lego                        2     3s
 nginx                            7     3s
 tcp-ports                        1     3s
-
-==> v1/Namespace
-NAME           STATUS  AGE
-kube-lego      Active  3s
-nginx-ingress  Active  3s
-
-==> v1/PersistentVolumeClaim
-NAME                              STATUS   VOLUME              CAPACITY  ACCESS MODES  STORAGECLASS  AGE
-gitlab-gitlab-config-storage      Pending  gitlab-gitlab-fast  3s
-gitlab-gitlab-postgresql-storage  Pending  gitlab-gitlab-fast  3s
-gitlab-gitlab-redis-storage       Pending  gitlab-gitlab-fast  3s
-gitlab-gitlab-registry-storage    Pending  gitlab-gitlab-fast  3s
-gitlab-gitlab-storage             Pending  gitlab-gitlab-fast  3s
-
-==> v1/Pod(related)
-NAME                                       READY  STATUS             RESTARTS  AGE
-default-http-backend-57d4d6d94c-crp78      0/1    ContainerCreating  0         2s
-gitlab-gitlab-748cb4b566-bg945             0/1    Pending            0         2s
-gitlab-gitlab-postgresql-7b99699f5b-9nmqg  0/1    Pending            0         2s
-gitlab-gitlab-redis-58bdb6bb8b-xvwmh       0/1    Pending            0         2s
-gitlab-gitlab-runner-6c8bf654c8-gmzlk      0/1    ContainerCreating  0         2s
-kube-lego-df5fd48f8-gq9zt                  0/1    ContainerCreating  0         2s
-nginx-892cj                                0/1    ContainerCreating  0         2s
-nginx-c8mhm                                0/1    ContainerCreating  0         2s
-nginx-ps6l7                                0/1    ContainerCreating  0         2s
-
-==> v1/Secret
-NAME                   TYPE    DATA  AGE
-gitlab-gitlab-runner   Opaque  2     3s
-gitlab-gitlab-secrets  Opaque  3     3s
-
-==> v1/Service
-NAME                      TYPE          CLUSTER-IP     EXTERNAL-IP  PORT(S)                                            AGE
-default-http-backend      ClusterIP     10.63.254.39   <none>       80/TCP                                             3s
-gitlab-gitlab             ClusterIP     10.63.254.168  <none>       22/TCP,8065/TCP,8105/TCP,8005/TCP,9090/TCP,80/TCP  3s
-gitlab-gitlab-postgresql  ClusterIP     10.63.251.128  <none>       5432/TCP                                           3s
-gitlab-gitlab-redis       ClusterIP     10.63.240.60   <none>       6379/TCP                                           3s
-nginx                     LoadBalancer  10.63.244.56   <pending>    80:31097/TCP,443:30562/TCP,22:31124/TCP            3s
-
-==> v1/StorageClass
-NAME                PROVISIONER           AGE
-gitlab-gitlab-fast  kubernetes.io/gce-pd  3s
-
-==> v1beta1/DaemonSet
-NAME   DESIRED  CURRENT  READY  UP-TO-DATE  AVAILABLE  NODE SELECTOR  AGE
-nginx  3        3        0      3           0          <none>         3s
-
+...
 ==> v1beta1/Deployment
 NAME                      READY  UP-TO-DATE  AVAILABLE  AGE
 default-http-backend      0/1    1           0          2s
@@ -3105,11 +3048,7 @@ Events:
   Normal   NotTriggerScaleUp  11m                  cluster-autoscaler  pod didn't trigger scale-up (it wouldn't fit if a new node is added):
   Normal   NotTriggerScaleUp  101s (x59 over 11m)  cluster-autoscaler  pod didn't trigger scale-up (it wouldn't fit if a new node is added): 2 node(s) had volume node affinity conflict
   Warning  FailedScheduling   56s (x20 over 11m)   default-scheduler   0/2 nodes are available: 2 node(s) had volume node affinity conflict.
-
 ```
-
-
-
 
 Get the External IP given to Ingress Controller for nginx:
 
@@ -3123,7 +3062,9 @@ nginx   LoadBalancer   10.64.14.71   34.67.91.228   80:30228/TCP,443:31540/TCP,2
 However gitlab-gitlab constantly was in Pending state and gitlab-gitlab-runner had CrashLoopBackOff state and 
 was restarting continuously.
 
-Disable autoscaling, the situation became better, we got rid of the issue with "volume node affinity conflict":
+**Fixing:**
+
+- Disable autoscaling, the situation became better, we got rid of the issue with "volume node affinity conflict":
 
 ```sh
 ==> v1beta1/Deployment
@@ -3139,7 +3080,7 @@ NAME    TYPE           CLUSTER-IP    EXTERNAL-IP     PORT(S)                    
 nginx   LoadBalancer   10.64.3.159   35.188.155.58   80:31759/TCP,443:31486/TCP,22:30558/TCP   37m
 ```
 
-but nginx keeps craching:
+but nginx keeps crashing:
 
 ```sh
 ==> v1/Pod(related)
@@ -3169,22 +3110,9 @@ F1002 05:33:08.668857       6 launch.go:122] no service with name nginx-ingress/
 [dumb-init] Child exited with status 255. Goodbye.
 ```
 
-User "system:serviceaccount:nginx-ingress:default" cannot get resource "services" in API group "" in the namespace
+User "system:serviceaccount:nginx-ingress:default" cannot get resource "services" in API group "" in the namespace.
 
-$ kubectl logs nginx-44rqp -n nginx-ingress
-[dumb-init] Unable to detach from controlling tty (errno=25 Inappropriate ioctl for device).
-[dumb-init] Child spawned with PID 6.
-[dumb-init] Unable to attach to controlling tty (errno=25 Inappropriate ioctl for device).
-[dumb-init] setsid complete.
-I1002 05:33:08.656683       6 launch.go:105] &{NGINX 0.9.0-beta.11 git-a3131c5 https://github.com/kubernetes/ingress}
-I1002 05:33:08.656955       6 launch.go:108] Watching for ingress class: nginx
-I1002 05:33:08.657415       6 launch.go:262] Creating API server client for https://10.64.0.1:443
-F1002 05:33:08.668857       6 launch.go:122] no service with name nginx-ingress/default-http-backend found: services "default-http-backend" is forbidden: User "system:serviceaccount:nginx-ingress:default" cannot get resource "services" in API group "" in the namespace "nginx-ingress"
-[dumb-init] Received signal 17.
-[dumb-init] A child with PID 6 exited with exit status 255.
-[dumb-init] Forwarded signal 15 to children.
-[dumb-init] Child exited with status 255. Goodbye.
-
+Fix: Enable legacy Authorization or configure RBAC.
 
 Some commands to watch the status of key services:
 
@@ -3196,12 +3124,12 @@ $ kubectl get svc -w --namespace nginx-ingress nginx
 and then : $ export SERVICE_IP=$(kubectl get svc --namespace nginx-ingress nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 ```
 
-
 Put the address into /etc/hosts: `echo "34.67.91.228 gitlab-gitlab staging production" >> /etc/hosts`
 
-Now we can proceed with rest work.
+GitlabCI has been installed. Now we can proceed with the rest work. Create and rollout the CI/CD pipelines.
 
-Review stage implemented.
+
+#### Review stage implemented.
 
 ```sh
 Checking Tiller...
@@ -3212,7 +3140,7 @@ Error: error when upgrading: current Tiller version is newer, use --force-upgrad
 ERROR: Job failed: error executing remote command: command terminated with non-zero exit code: Error executing in Docker Container: 1
 ```
 
-Fix instead of "helm init --upgrade" run "helm init --client-only"
+**Fix:** instead of "helm init --upgrade" run "helm init --client-only" or adjust the download link in .gitlab-ci.yml to latest stable Helm version:   
 
 ```yml
 function install_tiller() {
@@ -3220,6 +3148,10 @@ function install_tiller() {
     helm version
 +   helm init --client-only
     kubectl rollout status -n "$TILLER_NAMESPACE" -w "deployment/tiller-deploy"
+...
+# or
+#    - curl https://kubernetes-helm.storage.googleapis.com/helm-v2.13.1-linux-amd64.tar.gz | tar zx
+    - curl -L https://get.helm.sh/helm-v2.14.3-linux-amd64.tar.gz | tar zx
 ```
 
 After "review" stage implementation with application deploying by commit in feature-branch:
@@ -3247,8 +3179,9 @@ NAME                            REVISION        UPDATED                         
 gitlab                          1               Wed Oct  2 10:52:01 2019        DEPLOYED        gitlab-omnibus-0.1.37                   default  
 review-ivbdockerh-7fkelf        1               Wed Oct  2 18:25:39 2019        DEPLOYED        reddit-0.1.0                            review   
 review-ivbdockerh-y35rds        1               Wed Oct  2 18:20:21 2019        DEPLOYED        reddit-0.1.0                            review 
-click stop_review:
-------------------
+
+## click stop_review:
+---------------------
 $ helm ls
 NAME    REVISION        UPDATED                         STATUS          CHART                   APP VERSION     NAMESPACE
 gitlab  1               Wed Oct  2 10:52:01 2019        DEPLOYED        gitlab-omnibus-0.1.37                   default
@@ -3285,10 +3218,6 @@ release:
 ...
 ```
 
-
-
-
-
 **The commands that were used in this work:**
 
 ```sh
@@ -3321,8 +3250,6 @@ Uninstall release:
 `$ mkdir -p Gitlab_ci/{ui,comment,post,reddit-deploy/{scripts,Charts}}` - create several folders 
 
 ```
-
-
 
 #### Related links:
 ---
