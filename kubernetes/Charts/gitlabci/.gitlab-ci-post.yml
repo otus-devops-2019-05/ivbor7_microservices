@@ -123,7 +123,6 @@ review:
     - kubectl describe namespace "$KUBE_NAMESPACE" || kubectl create namespace "$KUBE_NAMESPACE"
     # installing Tiller
     - echo "Checking Tiller..."
-    # helm init
     - kubectl rollout status -n "$TILLER_NAMESPACE" -w "deployment/tiller-deploy"
     - >
       if ! helm version --debug; then

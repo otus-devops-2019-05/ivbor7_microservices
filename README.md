@@ -14,6 +14,8 @@ ivbor7 microservices repository
 - [HW#20 (kubernetes-2): Launch Cluster, Application. Security Model](./README.md#homework-20)
 - [HW#21 (kubernetes-3): Kubernetes: Networks, Storages](./README.md#homework-21)
 - [HW#22 (kubernetes-4): Kubernetes: HELM, GitLab, CI/CD pipeline](./README.md#homework-22)
+- [HW#23 (kubernetes-5): Kubernetes: Monitoring, Logging](./README.md#homework-23)
+
 ## Homework #12
 (docker-2 branch)
 
@@ -3063,7 +3065,7 @@ However gitlab-gitlab constantly was in Pending state and gitlab-gitlab-runner h
 was restarting continuously.
 
 **Fixing:**
-
+May be useful [Override affinity](https://helm.sh/docs/using_helm/#override-affinity)
 - Disable autoscaling, the situation became better, we got rid of the issue with "volume node affinity conflict":
 
 ```sh
@@ -3256,3 +3258,8 @@ Uninstall release:
 1. [Deploying production-ready GitLab on Google Kubernetes Engine](https://cloud.google.com/solutions/deploying-production-ready-gitlab-on-gke)
 2. [Gitlab Configuring Cluster Storage Guide](https://gitlab.com/gitlab-org/charts/gitlab/blob/master/doc/installation/storage.md)
 3. [Tillerless Helm](https://rimusz.net/tillerless-helm)
+
+
+## Homework #23
+
+(kubernetes-5 branch)
