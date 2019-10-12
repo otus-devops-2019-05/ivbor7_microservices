@@ -742,7 +742,7 @@ cAdvisor collect the following information from containers:
  - the % of CPU, RAM using
  - network traffic etc.
 
-Split the microservices and monitoring configurations on separate compose files and check it then:
+Split the application into microservices and monitoring configurations into separate compose files and check them:
 
 ```sh
 docker-compose -f docker-compose.yml config
@@ -1186,8 +1186,8 @@ Date Time 	Relative Time 	Annotation 	Address
 ## Homework #19
 (kubernetes-1 branch)
 
-Walking through the setting up [Kubernetes the hard way](https://github.com/kelseyhightower/kubernetes-the-hard-way), the configuration files and certificates were generated
-and placed into kubernetes/the_hard_way folder
+Walking through the setting up [Kubernetes the hard way](https://github.com/kelseyhightower/kubernetes-the-hard-way) , the configuration files and certificates were generated and placed into kubernetes/the_hard_way folder.
+A video example of [Kubernetes The Hard Way using Terraform](https://www.youtube.com/watch?v=00r9C8rWsK8)
 
 The final tests shows that Kubernetes cluster is functioning correctly:
 
@@ -1492,6 +1492,7 @@ Related links:
 6. [Kubernetes from scratch to AWS with Terraform and Ansible 3 parts](https://opencredo.com/blogs/kubernetes-aws-terraform-ansible-1/)
 7. [Kubernetes Architecture](https://www.padok.fr/en/blog/kubernetes-architecture-clusters)
 8. [Kubernetes configuration & Best Practices](https://bcouetil.gitlab.io/academy/BP-kubernetes.html)
+9. [Terraform Ansible Kubernetes](https://rsmitty.github.io/Terraform-Ansible-Kubernetes/)
 
 
 ## Homework #20
@@ -1500,7 +1501,7 @@ Related links:
 
 - Run Minikube-cluster(one-node cluster): `$ minikube start`
 While the minicube was bringing up the kubctl config file ~/.kube/config was configured.
-~/.kube/config - it's a place where cluster's context (user, cluster, namespace) is stored. It's also known as a kubernetes manifest. To run the application in kubernetes the target applicatio state should be described via CLI or in yaml-file called manifest.
+~/.kube/config - it's a place where cluster's context (user, cluster, namespace) is stored. It's also known as a kubernetes manifest. To run the application in kubernetes the target application state should be described via CLI or in yaml-file called manifest.
 Key section in context: 
  _user_ - username for connection to cluster
  _cluster_ - API server:
@@ -3258,8 +3259,318 @@ Uninstall release:
 1. [Deploying production-ready GitLab on Google Kubernetes Engine](https://cloud.google.com/solutions/deploying-production-ready-gitlab-on-gke)
 2. [Gitlab Configuring Cluster Storage Guide](https://gitlab.com/gitlab-org/charts/gitlab/blob/master/doc/installation/storage.md)
 3. [Tillerless Helm](https://rimusz.net/tillerless-helm)
+4. [Deploy Gitlab. Pods can't start](https://gitlab.com/charts/gitlab-omnibus/issues/12)
+
 
 
 ## Homework #23
 
 (kubernetes-5 branch)
+
+
+- [x] Created k8s cluster: 2 nodes - g1-small (1.5Gb RAM) and additional bigpool from  1 node - n1-standard-2(7.5Gb)
+
+- [x] Install ingress controller nginx: 
+
+```sh
+kubectl apply -f kubernetes/helm/tiller.yml
+helm init --service-account tiller
+
+$ helm install stable/nginx-ingress --name nginx
+NAME:   nginx
+LAST DEPLOYED: Tue Oct  8 13:14:11 2019
+NAMESPACE: default
+STATUS: DEPLOYED
+
+$ kubectl get service nginx-nginx-ingress-controller
+NAME                             TYPE           CLUSTER-IP   EXTERNAL-IP    PORT(S)                      AGE
+nginx-nginx-ingress-controller   LoadBalancer   10.64.13.0   34.70.51.248   80:32752/TCP,443:31616/TCP   8m4s
+```
+
+- [x] Download and install Prometheus locally in Charts folder with help of Helm chart:
+
+```sh
+cd kubernetes/charts && helm fetch --untar stable/prometheus
+```
+
+The main differences from values.yml are:
+
+- disabled services: pushgateway, alertmanager, kube-state-metrics
+- creating of Ingress to connect to nginx
+- adjusted the endpoint for cAdvisor metrics collecting
+- reduced metrics collection interval from 1min to 30sec
+
+- [x] Run Prometheus in k8s from charts/prometheus:
+
+```sh
+$ helm upgrade prom . -f custom_values.yml --install
+Release "prom" does not exist. Installing it now.
+NAME:   prom
+LAST DEPLOYED: Tue Oct  8 14:45:04 2019
+NAMESPACE: default
+STATUS: DEPLOYED
+
+RESOURCES:
+==> v1/ConfigMap
+NAME                    DATA  AGE
+prom-prometheus-server  3     2s
+...
+```
+
+The metrics can be collected via kube-api-server or via ssh access to host directly from kubelet. But the kube-api is preferable due to TLS traffic encrypted and requires authentication.
+
+CAdvisor provide an information only about resources consumed by Docker containers and nothing knows about k8s entities like a deployments, replicasets etc. To fix it will use kube-state-metrics module included in Prometheus.
+
+- [x] Enable the kube-state-metrics in Prometheus prometheus/custom_values.yml:
+ 
+ ```yml
+...
+kubeStateMetrics:
+## If false, kube-state-metrics will not be installed
+##
+enabled: true
+```
+
+and upgrade the prometheus release:
+
+```sh
+$ helm upgrade prom . -f custom_values.yml --install
+...
+
+==> v1/Pod(related)
+NAME                                                 READY  STATUS             RESTARTS  AGE
+prom-prometheus-kube-state-metrics-68df4797ff-mxcx2  0/1    ContainerCreating  0         3s
+prom-prometheus-server-78bb596864-9vswj              2/2    Running            0         103m
+
+==> v1/Service
+NAME                                TYPE          CLUSTER-IP  EXTERNAL-IP    PORT(S)       AGE
+prom-prometheus-kube-state-metrics  ClusterIP     None        <none>         80/TCP        3s
+prom-prometheus-server              LoadBalancer  10.64.1.8   34.69.212.201  80:32180/TCP  103m
+```
+
+*Task:* enable NodeExporter metrics:
+
+```sh
+==> v1/Pod(related)
+NAME                                                 READY  STATUS             RESTARTS  AGE
+prom-prometheus-kube-state-metrics-68df4797ff-mxcx2  1/1    Running            0         5m45s
+prom-prometheus-node-exporter-8mc6l                  0/1    ContainerCreating  0         2s
+prom-prometheus-node-exporter-htblf                  0/1    ContainerCreating  0         2s
+prom-prometheus-node-exporter-m42m7                  0/1    ContainerCreating  0         2s
+prom-prometheus-server-78bb596864-9vswj              2/2    Running            0         109m
+
+==> v1/Service
+NAME                                TYPE          CLUSTER-IP  EXTERNAL-IP    PORT(S)       AGE
+prom-prometheus-kube-state-metrics  ClusterIP     None        <none>         80/TCP        5m45s
+prom-prometheus-node-exporter       ClusterIP     None        <none>         9100/TCP      2s
+prom-prometheus-server              LoadBalancer  10.64.1.8   34.69.212.201  80:32180/TCP  109m
+```
+
+- [x] Run the reddit application in different namespaces:
+
+```sh
+$ helm upgrade reddit-test ./reddit --install
+$ helm upgrade production --namespace production ./reddit --install
+$ helm upgrade staging --namespace staging ./reddit --install
+```
+
+Instead of to hardcode the addresses of the microservices we will use the Service Descovery in prometheus, add the following code into custom_values.yml:
+
+```yml
+      - job_name: 'reddit-endpoints'
+        kubernetes_sd_configs:
+          - role: endpoints
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_label_app]
+            action: keep
+            regex: reddit
+```
+
+use action "keep" to extract only the services' endpoints with label "app=reddit"
+
+```yml
+- job_name: 'reddit-endpoints'
+  kubernetes_sd_configs:
+    - role: endpoints
+  relabel_configs:
+    - source_labels: [__meta_kubernetes_service_label_app]
+      action: keep
+      regex: reddit
+```
+
+display all group matches from regex in Prometheus labels:
+
+```yml
+  relabel_configs:
+    - action: labelmap
+      regex: __meta_kubernetes_service_label_(.+)
+```
+
+Now we can see k8s labels asigned to PODs.
+As the __meta_* metrics are not published, need to create it and pass the values to them:
+
+```yml
+- source_labels: [__meta_kubernetes_namespace]
+  target_label: kubernetes_namespace
+- source_labels: [__meta_kubernetes_service_name]
+  target_label: kubernetes_name
+```
+
+It's necessary to split the targets of reddit group by the environments and components:
+
+```yml
+  relabel_configs:
+    - action: labelmap
+      regex: __meta_kubernetes_service_label_(.+)
+    - source_labels: [__meta_kubernetes_service_label_app, __meta_kubernetes_namespace]
+      action: keep
+      regex: reddit;(production|staging)+
+    - source_labels: [__meta_kubernetes_namespace]
+      target_label: kubernetes_namespace
+    - source_labels: [__meta_kubernetes_service_name]
+      target_label: kubernetes_name
+```
+
+- [x] Extra task: split up the 'reddit-endpoints' job in configuration in 
+Разбейте конфигурацию job’а `reddit-endpoints` (слайд 24) так, чтобы было 3 job’а для каждой из компонент приложений (post-endpoints, comment-endpoints, ui-endpoints), а reddit-endpoints уберите.
+
+
+- [x] - install Grafana:
+
+
+  - this command from gist is incorrect and does not work: 
+
+```sh
+$ helm upgrade --install grafana stable/grafana --set "server.adminPassword=admin" \
+--set "server.service.type=NodePort" \
+--set "server.ingress.enabled=true" \
+--set "server.ingress.hosts={reddit-grafana}"
+```
+
+use this:
+
+```sh
+helm upgrade --install grafana stable/grafana --set "server.adminPassword=admin" \
+--set "service.type=NodePort" \
+--set "ingress.enabled=true" \
+--set "ingress.hosts={reddit-grafana}"
+
+or
+
+`$ helm install --name grafana stable/grafana --set=ingress.enabled=True,ingress.hosts={grafana.domain.com} --namespace demo --set rbac.create=true`
+
+1. Get your 'admin' user password by running:
+
+   kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+
+2. The Grafana server can be accessed via port 80 on the following DNS name from within your cluster:
+
+   grafana.default.svc.cluster.local
+
+   Get the Grafana URL to visit by running these commands in the same shell:
+
+     export POD_NAME=$(kubectl get pods --namespace default -l "app=grafana,release=grafana" -o jsonpath="{.items[0].metadata.name}")
+     kubectl --namespace default port-forward $POD_NAME 3000
+```
+
+-[x] Extra task: enable alertmanager in k8s and configure rules for controlling the availability of api server and k8s hosts see [Alerting rules](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/) for help.
+
+  - Enable Alertmanager
+  - Congigure rules so that Alert notifications send to slack-chat:
+
+```yml
+...
+serverFiles:
+  alerts:
+    groups:
+# Alert rules for controlling availability of APIServer
+    - name: APIServers
+      rules:
+      - alert: InstanceAPIServerDown
+        expr: up{job="kubernetes-apiservers"} == 0
+        for: 1m
+        labels:
+          severity: page
+        annotations:
+          description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute'
+          summary: 'Instance API server {{ $labels.instance }} down'
+```
+
+Events:
+  Type     Reason                  Age                   From                                                Message
+  ----     ------                  ----                  ----                                                -------
+  Normal   NotTriggerScaleUp       12m                   cluster-autoscaler                                  pod didn't trigger scale-up (it wouldn't fit if a new node is added):
+  Normal   Scheduled               12m                   default-scheduler                                   Successfully assigned default/prom-prometheus-alertmanager-767c8b6795-zndr7 to gke-reddit-cluster-big-pool-e1feb68f-9nxc
+  Warning  FailedScheduling        12m (x5 over 12m)     default-scheduler                                   pod has unbound immediate PersistentVolumeClaims (repeated 3 times)
+  Normal   SuccessfulAttachVolume  12m                   attachdetach-controller                             AttachVolume.Attach succeeded for volume "pvc-b16626a7-ece4-11e9-ad37-42010a8000fd"
+
+
+### Logging
+
+- Preparation:
+
+```sh
+$ kubectl get nodes
+NAME                                            STATUS   ROLES    AGE    VERSION
+gke-reddit-cluster-big-pool-e1feb68f-9nxc       Ready    <none>   112m   v1.13.10-gke.0
+gke-reddit-cluster-default-pool-23bea60c-d5tg   Ready    <none>   112m   v1.13.10-gke.0
+gke-reddit-cluster-default-pool-23bea60c-sc56   Ready    <none>   112m   v1.13.10-gke.0
+
+ivbor@ivbor-nout ~/Otus/ivbor7_microservices/kubernetes/Charts $ kubectl label node gke-reddit-cluster-big-pool-e1feb68f-9nxc elastichost=true
+node/gke-reddit-cluster-big-pool-e1feb68f-9nxc labeled
+```
+
+We will spin up an EFK stack: 
+- ElasticSearch (StateFulSet) - datatbase, search engine
+- Kibana (Deployment) - Web UI for requests and displaying the results
+- Fluentd (daemonSet) - sheeper and logs agregator 
+
+Create the kubernates/efk and files inside it. Run the stack: `kubectl apply
+-f ./efk`
+
+
+The list of used commands:
+--------------------------
+
+```sh
+kubectl apply -f kubernetes/helm/tiller.yml
+helm init --service-account tiller
+
+
+$ helm install stable/nginx-ingress --name nginx
+$ kubectl get service nginx-nginx-ingress-controller
+
+- download and install Prometheus:
+cd kubernetes/charts && helm fetch --untar stable/prometheus
+$ helm upgrade prom . -f custom_values.yml --install
+
+
+- Running the reddit application using helm charts:
+$ helm upgrade reddit-test ./reddit --install
+$ helm upgrade production --namespace production ./reddit --install
+$ helm upgrade staging --namespace staging ./reddit --install
+
+- install Grafana:
+$ helm upgrade --install grafana stable/grafana --set "server.adminPassword=admin" \
+--set "service.type=NodePort" \
+--set "ingress.enabled=true" \
+--set "ingress.hosts={reddit-grafana}"
+
+- add label to node in k8s cluster:
+$ kubectl label node gke-cluster-1-big-pool-b4209075-tvn3 elastichost=true
+```
+
+
+
+
+Related links:
+
+1. [Relabel Config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#relabel_config)
+2. [Alertmanager Prometheus notification configuration in k8s](https://medium.com/@_ipeacocks/alertmanager-prometheus-notification-configuration-in-kubernetes)
+3. [Alerting Rules](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/)
+4. [Kubernetes monitoring with Prometheus in 15 minutes](https://itnext.io/kubernetes-monitoring-with-prometheus-in-15-minutes-8e54d1de2e13)
+5. [Sending email with Alertmanager via Gmail](https://www.robustperception.io/sending-email-with-the-alertmanager-via-gmail)
+6. [Set secret file to k8s by yaml](https://stackoverflow.com/questions/36887946/how-to-set-secret-files-to-kubernetes-secrets-by-yaml/42506221)
+7. [Configure Alertmanager which installed by helm on Kubernetes](https://stackoverflow.com/questions/48374858/how-to-config-alertmanager-which-installed-by-helm-on-kubernetes)
+8. [Installing Kubernetes Addons](https://github.com/kubernetes/kops/blob/master/docs/addons.md)
+9. [Prometheus Operator Addon](https://github.com/kubernetes/kops/tree/master/addons/prometheus-operator)
