@@ -3475,8 +3475,8 @@ or
 
 -[x] Extra task: enable alertmanager in k8s and configure rules for controlling the availability of api server and k8s hosts see [Alerting rules](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/) for help.
 
-  - Enable Alertmanager
-  - Congigure rules so that Alert notifications send to slack-chat:
+- Enable Alertmanager
+- Configure rules so that Alert notifications send to slack-chat:
 
 ```yml
 ...
@@ -3496,15 +3496,6 @@ serverFiles:
           summary: 'Instance API server {{ $labels.instance }} down'
 ```
 
-Events:
-  Type     Reason                  Age                   From                                                Message
-  ----     ------                  ----                  ----                                                -------
-  Normal   NotTriggerScaleUp       12m                   cluster-autoscaler                                  pod didn't trigger scale-up (it wouldn't fit if a new node is added):
-  Normal   Scheduled               12m                   default-scheduler                                   Successfully assigned default/prom-prometheus-alertmanager-767c8b6795-zndr7 to gke-reddit-cluster-big-pool-e1feb68f-9nxc
-  Warning  FailedScheduling        12m (x5 over 12m)     default-scheduler                                   pod has unbound immediate PersistentVolumeClaims (repeated 3 times)
-  Normal   SuccessfulAttachVolume  12m                   attachdetach-controller                             AttachVolume.Attach succeeded for volume "pvc-b16626a7-ece4-11e9-ad37-42010a8000fd"
-
-
 ### Logging
 
 - Preparation:
@@ -3520,7 +3511,7 @@ ivbor@ivbor-nout ~/Otus/ivbor7_microservices/kubernetes/Charts $ kubectl label n
 node/gke-reddit-cluster-big-pool-e1feb68f-9nxc labeled
 ```
 
-We will spin up an EFK stack: 
+Spin up the EFK stack: 
 - ElasticSearch (StateFulSet) - datatbase, search engine
 - Kibana (Deployment) - Web UI for requests and displaying the results
 - Fluentd (daemonSet) - sheeper and logs agregator 
@@ -3596,7 +3587,6 @@ $ helm del $(helm ls --all --short) --purge
 or for anyone experiencing this when using multiple kubectl contexts, remember to also explicitly set --kube-context when using one that is not default.:
 
 $ helm del --purge $(NAME_RELEASE) --kube-context $(ENV)
-
 ```
 
 - [x] Extra task with (*): create a Helm-chart to run EFK
@@ -3605,9 +3595,9 @@ If you like to run EFK tools in a production environment you could use the Helm 
 
 The source of the mentioned charts can be found here:
 
-    [Elasticsearch](https://github.com/helm/charts/tree/master/stable/elasticsearch)
-    [Fluentd-elasticsearch](https://github.com/kiwigrid/helm-charts/tree/master/charts/fluentd-elasticsearch)
-    [Kibana](https://github.com/helm/charts/tree/master/stable/kibana)
+- [Elasticsearch](https://github.com/helm/charts/tree/master/stable/elasticsearch)
+- [Fluentd-elasticsearch](https://github.com/kiwigrid/helm-charts/tree/master/charts/fluentd-elasticsearch)
+- [Kibana](https://github.com/helm/charts/tree/master/stable/kibana)
 
 
 
