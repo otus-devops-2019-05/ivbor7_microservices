@@ -3525,9 +3525,37 @@ We will spin up an EFK stack:
 - Kibana (Deployment) - Web UI for requests and displaying the results
 - Fluentd (daemonSet) - sheeper and logs agregator 
 
-Create the kubernates/efk and files inside it. Run the stack: `kubectl apply
--f ./efk`
+Create the kubernates/efk and files inside it. Run the stack: `kubectl apply -f ./efk`
 
+Install Kibana using Helm chart:
+
+```sh
+helm upgrade --install kibana stable/kibana \
+--set "ingress.enabled=true" \
+--set "ingress.hosts={reddit-kibana}" \
+--set "env.ELASTICSEARCH_URL=http://elasticsearch-logging:9200" \
+--version 0.1.1
+```
+
+To verify that oauth-proxy has started, run:
+
+```sh
+$ kubectl --namespace=default get pods -l "app=kibana"
+NAME                     READY   STATUS              RESTARTS   AGE
+kibana-75bf84676-dq888   0/1     ContainerCreating   0          27s
+```
+
+Clean up all releases:
+
+```sh
+$ helm ls --all --short | xargs -L1 helm delete --purge
+release "grafana" deleted
+release "kibana" deleted
+release "nginx" deleted
+release "production" deleted
+release "prom" deleted
+release "staging" deleted
+```
 
 The list of used commands:
 --------------------------
@@ -3558,7 +3586,29 @@ $ helm upgrade --install grafana stable/grafana --set "server.adminPassword=admi
 
 - add label to node in k8s cluster:
 $ kubectl label node gke-cluster-1-big-pool-b4209075-tvn3 elastichost=true
+
+- verify that pod has started:
+$ kubectl --namespace=default get pods -l "app=kibana"
+
+- clean up releases:
+$ helm ls --all --short | xargs -L1 helm delete --purge
+$ helm del $(helm ls --all --short) --purge
+or for anyone experiencing this when using multiple kubectl contexts, remember to also explicitly set --kube-context when using one that is not default.:
+
+$ helm del --purge $(NAME_RELEASE) --kube-context $(ENV)
+
 ```
+
+- [x] Extra task with (*): create a Helm-chart to run EFK
+
+If you like to run EFK tools in a production environment you could use the Helm charts, provided by the Helm community, which are used by a lot of people and therefore are widely tested. You can find them all via the Helm Hub.
+
+The source of the mentioned charts can be found here:
+
+    [Elasticsearch](https://github.com/helm/charts/tree/master/stable/elasticsearch)
+    [Fluentd-elasticsearch](https://github.com/kiwigrid/helm-charts/tree/master/charts/fluentd-elasticsearch)
+    [Kibana](https://github.com/helm/charts/tree/master/stable/kibana)
+
 
 
 
@@ -3574,3 +3624,6 @@ Related links:
 7. [Configure Alertmanager which installed by helm on Kubernetes](https://stackoverflow.com/questions/48374858/how-to-config-alertmanager-which-installed-by-helm-on-kubernetes)
 8. [Installing Kubernetes Addons](https://github.com/kubernetes/kops/blob/master/docs/addons.md)
 9. [Prometheus Operator Addon](https://github.com/kubernetes/kops/tree/master/addons/prometheus-operator)
+10. [Set up an EFK on Kubernetes](https://www.digitalocean.com/community/tutorials/how-to-set-up-an-elasticsearch-fluentd-and-kibana-efk-logging-stack-on-kubernetes)
+11. [Helm from Basics to Advanced](https://banzaicloud.com/blog/creating-helm-charts/)
+12. [Helm charts tips and tricks](https://github.com/helm/helm/blob/master/docs/charts_tips_and_tricks.md)
