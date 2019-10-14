@@ -77,7 +77,7 @@ release:
     - docker pull "$CI_APPLICATION_REPOSITORY:$CI_APPLICATION_TAG"
     - docker tag "$CI_APPLICATION_REPOSITORY:$CI_APPLICATION_TAG" "$CI_APPLICATION_REPOSITORY:$(cat VERSION)"
     - docker push "$CI_APPLICATION_REPOSITORY:$(cat VERSION)"
-    # latest is neede for feature flags
+    # latest is needed for feature flags
     - docker tag "$CI_APPLICATION_REPOSITORY:$CI_APPLICATION_TAG" "$CI_APPLICATION_REPOSITORY:latest"
     - docker push "$CI_APPLICATION_REPOSITORY:latest"
     - curl --fail --request POST --form token=$DEPLOY_TOKEN --form ref=master https://gitlab-gitlab/api/v4/projects/2/trigger/pipeline
@@ -110,7 +110,6 @@ review:
     - apk add glibc-2.23-r3.apk
     - curl https://storage.googleapis.com/pub/gsutil.tar.gz | tar -xz -C $HOME
     - export PATH=${PATH}:$HOME/gsutil
-#    - curl https://kubernetes-helm.storage.googleapis.com/helm-v2.13.1-linux-amd64.tar.gz | tar zx 
     - curl -L https://get.helm.sh/helm-v2.14.3-linux-amd64.tar.gz | tar zx
     - mv linux-amd64/helm /usr/bin/
     - helm version --client
